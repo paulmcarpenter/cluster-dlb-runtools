@@ -3,6 +3,11 @@ import sys
 import random
 import os
 import time
+import getopt
+
+wait = None
+min_per_node = 0
+monitor_time = None
 
 splits = { (2,1) : '0;1',
 (3,1) : '0;1;2',
@@ -202,22 +207,18 @@ def do_cmd(s):
 	os.system(s)
 
 def run_experiment(nodes, deg, desc, cmd, rebalance=True):
+	global wait
+	global monitor_time
 	
 	print 'Experiment', nodes, deg, desc, cmd, rebalance
-	do_cmd('mkdir -p .balance/')
-
-	# Set up .map file
-	fp = open('.map','w')
-	for d in range(0, deg):
-		for n in range(0, nodes):
-			print >> fp, n,
-			print n,
-	print >> fp
-	print
-	fp.close()
 
 	if rebalance:
-		do_cmd('${MERCURIUM}/../rebalance/rebalance.py 10000 > rebalance-out-%d-%d.txt &' % (nodes,deg))
+		opts = ''
+		if not wait is None:
+			opts += '--wait %d ' % wait
+		if not monitor_time is None:
+			opts += '--monitor %f ' % monitor_time
+		do_cmd('${MERCURIUM}/../rebalance/rebalance.py ' + opts + '10000 > rebalance-out-%d-%d.txt &' % (nodes,deg))
 		time.sleep(1)
 
 	# Run experiment
@@ -227,24 +228,45 @@ def run_experiment(nodes, deg, desc, cmd, rebalance=True):
 
 # Run experiments
 def main(argv):
-	assert len(argv) >= 3
-	num_nodes = int(argv[1])
-	cmd = ' '.join(argv[2:])
+
+	global wait
+	global min_per_node
+	global monitor_time
+
+	try:
+		opts, args = getopt.getopt( argv[1:],
+									'h', ['help', 'wait=', 'min-per-node=', 'monitor='] )
+
+	except getopt.error, msg:
+		print msg
+		print "for help use --help"
+		sys.exit(2)
+	for o, a in opts:
+		if o in ('-h', '--help'):
+			return Usage()
+		elif o == '--wait':
+			wait = int(a)
+		elif o == '--min-per-node':
+			min_per_node = int(a)
+		elif o == '--monitor':
+			monitor_time = float(a)
+
+	assert len(args) >= 2
+	num_nodes = int(args[0])
+	cmd = ' '.join(args[1:])
 
 	do_cmd('pwd')
 
 	for (nodes,deg), desc in sorted(splits.items()):
 		if nodes == num_nodes:
-			run_experiment(nodes, deg, desc, cmd)
-			do_cmd('rm -f .map')
-			do_cmd('rm -rf .balance')
-			do_cmd('touch .kill')
-			time.sleep(1)
-			while os.path.exists('.kill'):
+			if deg >= min_per_node:
+				do_cmd('rm -f .kill')
+				do_cmd('rm -rf .hybrid')
+				run_experiment(nodes, deg, desc, cmd)
+				do_cmd('touch .kill')
 				time.sleep(1)
-
-	print 'balanced'
-	run_experiment(num_nodes, 1, splits[(num_nodes,1)], cmd + ' bal', rebalance=False)
+				while os.path.exists('.kill'):
+					time.sleep(1)
 
 	return 0
 
