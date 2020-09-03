@@ -197,55 +197,56 @@ splits = { (2,1) : '0;1',
 
 
 def do_cmd(s):
-    print s
-    os.system(s)
+	print s
+	sys.stdout.flush()
+	os.system(s)
 
 def run_experiment(nodes, deg, desc, cmd, rebalance=True):
-    
-    print 'Experiment', nodes, deg, desc, cmd, rebalance
-    do_cmd('mkdir -p .balance/')
+	
+	print 'Experiment', nodes, deg, desc, cmd, rebalance
+	do_cmd('mkdir -p .balance/')
 
-    # Set up .map file
-    fp = open('.map','w')
-    for d in range(0, deg):
-        for n in range(0, nodes):
-            print >> fp, n,
-            print n,
-    print >> fp
-    print
-    fp.close()
+	# Set up .map file
+	fp = open('.map','w')
+	for d in range(0, deg):
+		for n in range(0, nodes):
+			print >> fp, n,
+			print n,
+	print >> fp
+	print
+	fp.close()
 
-    if rebalance:
-        do_cmd('../../rebalance/rebalance.py 10000 > rebalance-out-%d-%d.txt &' % (nodes,deg))
-        time.sleep(1)
+	if rebalance:
+		do_cmd('${MERCURIUM}/../rebalance/rebalance.py 10000 > rebalance-out-%d-%d.txt &' % (nodes,deg))
+		time.sleep(1)
 
-    # Run experiment
-    s = 'NANOS6_CLUSTER_SPLIT="%s" MV2_ENABLE_AFFINITY=0 mpirun -np %d %s ' % (desc, nodes*deg, cmd)
-    do_cmd(s)
+	# Run experiment
+	s = 'NANOS6_CLUSTER_SPLIT="%s" MV2_ENABLE_AFFINITY=0 mpirun -np %d %s ' % (desc, nodes*deg, cmd)
+	do_cmd(s)
 
 
 # Run experiments
 def main(argv):
-    assert len(argv) >= 3
-    num_nodes = int(argv[1])
-    cmd = ' '.join(argv[2:])
+	assert len(argv) >= 3
+	num_nodes = int(argv[1])
+	cmd = ' '.join(argv[2:])
 
-    do_cmd('pwd')
+	do_cmd('pwd')
 
-    for (nodes,deg), desc in sorted(splits.items()):
-        if nodes == num_nodes:
-            run_experiment(nodes, deg, desc, cmd)
-            do_cmd('rm -f .map')
-            do_cmd('rm -rf .balance')
-            do_cmd('touch .kill')
-            time.sleep(1)
-            while os.path.exists('.kill'):
-                time.sleep(1)
+	for (nodes,deg), desc in sorted(splits.items()):
+		if nodes == num_nodes:
+			run_experiment(nodes, deg, desc, cmd)
+			do_cmd('rm -f .map')
+			do_cmd('rm -rf .balance')
+			do_cmd('touch .kill')
+			time.sleep(1)
+			while os.path.exists('.kill'):
+				time.sleep(1)
 
-    print 'balanced'
-    run_experiment(num_nodes, 1, splits[(num_nodes,1)], cmd + ' bal', rebalance=False)
+	print 'balanced'
+	run_experiment(num_nodes, 1, splits[(num_nodes,1)], cmd + ' bal', rebalance=False)
 
-    return 0
+	return 0
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+	sys.exit(main(sys.argv))
