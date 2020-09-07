@@ -234,6 +234,7 @@ def main(argv):
 	global min_per_node
 	global max_per_node
 	global monitor_time
+	os.environ['NANOS6_ENABLE_DLB'] = '1'
 
 	try:
 		opts, args = getopt.getopt( argv[1:],
@@ -266,6 +267,10 @@ def main(argv):
 			if deg >= min_per_node and deg <= max_per_node:
 				do_cmd('rm -f .kill')
 				do_cmd('rm -rf .hybrid')
+
+				# Clean DLB
+				do_cmd('mpirun -np %d dlb_shm -d' % num_nodes)
+
 				run_experiment(nodes, deg, desc, cmd)
 				do_cmd('touch .kill')
 				time.sleep(1)
