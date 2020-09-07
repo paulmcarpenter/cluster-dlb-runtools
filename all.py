@@ -7,6 +7,7 @@ import getopt
 
 wait = None
 min_per_node = 0
+max_per_node = 1000
 monitor_time = None
 
 splits = { (2,1) : '0;1',
@@ -231,11 +232,12 @@ def main(argv):
 
 	global wait
 	global min_per_node
+	global max_per_node
 	global monitor_time
 
 	try:
 		opts, args = getopt.getopt( argv[1:],
-									'h', ['help', 'wait=', 'min-per-node=', 'monitor='] )
+									'h', ['help', 'wait=', 'min-per-node=', 'max-per-node', 'monitor='] )
 
 	except getopt.error, msg:
 		print msg
@@ -248,6 +250,8 @@ def main(argv):
 			wait = int(a)
 		elif o == '--min-per-node':
 			min_per_node = int(a)
+		elif o == '--max-per-node':
+			max_per_node = int(a)
 		elif o == '--monitor':
 			monitor_time = float(a)
 
@@ -259,7 +263,7 @@ def main(argv):
 
 	for (nodes,deg), desc in sorted(splits.items()):
 		if nodes == num_nodes:
-			if deg >= min_per_node:
+			if deg >= min_per_node and deg <= max_per_node:
 				do_cmd('rm -f .kill')
 				do_cmd('rm -rf .hybrid')
 				run_experiment(nodes, deg, desc, cmd)
