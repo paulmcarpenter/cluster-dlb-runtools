@@ -207,13 +207,24 @@ def do_cmd(s):
 	sys.stdout.flush()
 	os.system(s)
 
-def run_experiment(nodes, deg, desc, cmd, rebalance=True):
+def run_experiment(nodes, deg, desc, cmd, policy, rebalance=None):
 	global wait
 	global monitor_time
 	
-	print 'Experiment', nodes, deg, desc, cmd, rebalance
+	if rebalance is None:
+		if policy == 'global':
+			rebalance = True
+		else:
+			assert policy == 'local'
+			rebalance = False
+
+	print 'Experiment', 'nodes:', nodes, 'deg:', deg, 'desc:', desc, 'cmd:', cmd, policy, 'rebalance:', rebalance
 
 	if rebalance:
+
+		do_cmd('rm -f .kill')
+		do_cmd('rm -rf .hybrid')
+
 		opts = ''
 		if not wait is None:
 			opts += '--wait %d ' % wait
@@ -223,8 +234,15 @@ def run_experiment(nodes, deg, desc, cmd, rebalance=True):
 		time.sleep(1)
 
 	# Run experiment
-	s = 'NANOS6_CLUSTER_SPLIT="%s" MV2_ENABLE_AFFINITY=0 mpirun -np %d %s ' % (desc, nodes*deg, cmd)
+	s = 'NANOS6_CLUSTER_SPLIT="%s" ' % desc
+	s += 'NANOS6_CLUSTER_HYBRID_POLICY="%s" ' % policy
+	s += 'MV2_ENABLE_AFFINITY=0 '
+	s += 'mpirun -np %d %s ' % (nodes*deg, cmd)
 	do_cmd(s)
+
+	if rebalance:
+		do_cmd('touch .kill')
+
 
 
 # Run experiments
@@ -265,17 +283,16 @@ def main(argv):
 	for (nodes,deg), desc in sorted(splits.items()):
 		if nodes == num_nodes:
 			if deg >= min_per_node and deg <= max_per_node:
-				do_cmd('rm -f .kill')
-				do_cmd('rm -rf .hybrid')
 
-				# Clean DLB
-				do_cmd('mpirun -np %d dlb_shm -d' % num_nodes)
+				for policy in ['global', 'local']:
+					# Clean DLB
+					do_cmd('mpirun -np %d dlb_shm -d' % num_nodes)
 
-				run_experiment(nodes, deg, desc, cmd)
-				do_cmd('touch .kill')
-				time.sleep(1)
-				while os.path.exists('.kill'):
+					run_experiment(nodes, deg, desc, cmd)
+
 					time.sleep(1)
+					while os.path.exists('.kill'):
+						time.sleep(1)
 
 	return 0
 
