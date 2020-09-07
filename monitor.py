@@ -36,37 +36,53 @@ for extrank in extranks:
 	files[extrank] = open('.hybrid/utilization%d' % extrank, 'r')
 
 for node in range(0, numNodes):
-	fmt = '%' + str(4 * maxGroup) + 's'
+	fmt = '%' + str(9 * maxGroup) + 's'
 	print fmt % ('node %d' % node), '| ',
 print
 
 for node in range(0, numNodes):
 	for group in range(0, maxGroup):
 		if (group,node) in gn:
-			print '%3s' % ('g%d' % group),
+			print '%8s' % ('g%d' % group),
 		else:
-			print '   ',
+			print '%8s' % '',
 	print ' | ',
 print
 for node in range(0, numNodes):
 	for group in range(0, maxGroup):
 		if (group,node) in gn:
-			print '%3s' % ('e%d' % gn[(group,node)]),
+			print '%8s' % ('e%d' % gn[(group,node)]),
 		else:
-			print '   ',
+			print '%8s' % '',
 	print ' | ',
 print
 
+prev_timestamp = 0
 while True:
 	local_alloc = {}
+	busy = {}
 	ok = True
+	timestamp = None
+	atend = False
 	for extrank in extranks:
+
 		line = None
 		while True:
 			newline = files[extrank].readline()
 			if newline == '':
+				atend = True
 				break
 			line = newline
+			s = newline.split()
+			if len(s) == 6:
+				ts = float(s[0])
+				if timestamp is None:
+					timestamp = ts
+				else:
+					timestamp = max(timestamp, ts)
+				# Gone far enough ahead for this rank
+				if timestamp > prev_timestamp + 1.99:
+					break
 		if line is None:
 			ok = False
 			break
@@ -75,22 +91,27 @@ while True:
 			ok = False
 			break
 		# Timestamp, global alloc, local alloc, busy, num ready, tot num ready
+		if timestamp is None:
+			timestamp = float(s[0])
+		else:
+			timestamp = min(timestamp, float(s[0]))
 		local_alloc[extrank] = int(s[2])
+		busy[extrank] = float(s[3])
 	
 	if ok:
+		# print '%3.1f' % timestamp,
 		for node in range(0, numNodes):
 			for group in range(0, maxGroup):
 				if (group,node) in gn:
-					print '%3d' % local_alloc[gn[(group,node)]],
+					extrank = gn[(group,node)]
+					print '%2d %4.1f ' % (local_alloc[extrank], busy[extrank]),
 				else:
-					print '  -',
+					print '%8s' % '-',
 			print ' | ',
 		print
 
-
-
-
-	time.sleep(2)
+	if atend:
+		time.sleep(2)
 		
 
 
