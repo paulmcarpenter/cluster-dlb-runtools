@@ -253,10 +253,11 @@ def main(argv):
 	global max_per_node
 	global monitor_time
 	os.environ['NANOS6_ENABLE_DLB'] = '1'
+	policies = ['local', 'global']
 
 	try:
 		opts, args = getopt.getopt( argv[1:],
-									'h', ['help', 'wait=', 'min-per-node=', 'max-per-node', 'monitor='] )
+									'h', ['help', 'wait=', 'min-per-node=', 'max-per-node=', 'monitor=', 'local', 'global'] )
 
 	except getopt.error, msg:
 		print msg
@@ -273,6 +274,10 @@ def main(argv):
 			max_per_node = int(a)
 		elif o == '--monitor':
 			monitor_time = float(a)
+		elif o == '--local':
+			policies = ['local']
+		elif o == '--global':
+			policies = ['global']
 
 	assert len(args) >= 2
 	num_nodes = int(args[0])
@@ -284,11 +289,11 @@ def main(argv):
 		if nodes == num_nodes:
 			if deg >= min_per_node and deg <= max_per_node:
 
-				for policy in ['global', 'local']:
+				for policy in policies:
 					# Clean DLB
 					do_cmd('mpirun -np %d dlb_shm -d' % num_nodes)
 
-					run_experiment(nodes, deg, desc, cmd)
+					run_experiment(nodes, deg, desc, cmd, policy)
 
 					time.sleep(1)
 					while os.path.exists('.kill'):
