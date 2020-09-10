@@ -9,6 +9,7 @@ wait = None
 min_per_node = 0
 max_per_node = 1000
 monitor_time = None
+extrae = False
 
 splits = { (2,1) : '0;1',
 (3,1) : '0;1;2',
@@ -207,19 +208,41 @@ def do_cmd(s):
 	sys.stdout.flush()
 	os.system(s)
 
-def run_experiment(nodes, deg, desc, cmd, policy, rebalance=None):
+def translate(string, d):
+	s = ''
+	for ch in string:
+		s += d.get(ch, ch)
+	return s
+
+def tracedir_name(desc, cmd, policy, extrae_as_threads):
+	cmd2 = translate(cmd, {' ': '_', '/' : '_'})
+	desc2 = translate(desc, {';': '_'})
+	threads = ''
+	if not extrae_as_threads:
+		threads = '-nothreads'
+		
+	return 'trace-%s-%s-%s%s' % (cmd2, desc2, policy, threads)
+
+def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=None):
 	global wait
 	global monitor_time
+	global extrae
 	
 	if rebalance is None:
 		if policy == 'global':
+			hybrid_policy = 'global'
 			rebalance = True
-		else:
-			assert policy == 'local'
+		elif policy == 'local':
+			hybrid_policy = 'local'
 			rebalance = False
+		else:
+			assert policy =='no-rebalance'
+			hybrid_policy = 'global' # Global policy
+			rebalance = False # but don't actually rebalance
 
 	print 'Experiment', 'nodes:', nodes, 'deg:', deg, 'desc:', desc, 'cmd:', cmd, policy, 'rebalance:', rebalance
 
+	rebalance_filename = None
 	if rebalance:
 
 		do_cmd('rm -f .kill')
@@ -230,20 +253,60 @@ def run_experiment(nodes, deg, desc, cmd, policy, rebalance=None):
 			opts += '--wait %d ' % wait
 		if not monitor_time is None:
 			opts += '--monitor %f ' % monitor_time
-		do_cmd('${MERCURIUM}/../rebalance/rebalance.py ' + opts + '10000 > rebalance-out-%d-%d.txt &' % (nodes,deg))
+		rebalance_filename = 'rebalance-out-%d-%d.txt' % (nodes,deg)
+		do_cmd('${MERCURIUM}/../rebalance/rebalance.py ' + opts + '10000 > ' + rebalance_filename + ' &')
 		time.sleep(1)
+
+	if extrae:
+		do_cmd('rm -rf set-0/ TRACE.mpits')
 
 	# Run experiment
 	s = 'NANOS6_CLUSTER_SPLIT="%s" ' % desc
-	s += 'NANOS6_CLUSTER_HYBRID_POLICY="%s" ' % policy
+	s += 'NANOS6_CLUSTER_HYBRID_POLICY="%s" ' % hybrid_policy
 	s += 'MV2_ENABLE_AFFINITY=0 '
+	if extrae:
+	 	s = s + 'NANOS6=extrae-debug '
+	if extrae_as_threads:
+		s = s + 'NANOS6_EXTRAE_AS_THREADS=1 '
+	else:
+		if 'NANOS6_EXTRAE_AS_THREADS' in os.environ.keys():
+			del os.environ['NANOS6_EXTRAE_AS_THREADS']
 	s += 'mpirun -np %d %s ' % (nodes*deg, cmd)
 	do_cmd(s)
 
 	if rebalance:
 		do_cmd('touch .kill')
+	if extrae:
+		# Hack to generate TRACE.mpits file
+		prefix = ''
+		if os.path.exists('create_paraver_trace.py'):
+			prefix = './'
+		elif os.path.exists('../create_paraver_trace.py'):
+			prefix = '../'
 
+		do_cmd(prefix + 'create_paraver_trace.py')
+		do_cmd('mpi2prv -f TRACE.mpits')
 
+		# Now move traces to a subdirectory
+		tracedir = tracedir_name(desc, cmd, policy, extrae_as_threads)
+		do_cmd('rm -rf ' + tracedir)
+		do_cmd('mkdir -p ' + tracedir)
+		do_cmd('mv TRACE.mpits set-0 *.prv *.pcf *.row ' + tracedir)
+		if not rebalance_filename is None:
+			do_cmd('mv ' + rebalance_filename + ' ' + tracedir)
+
+def Usage():
+	print '.all.py <options>  <num_nodes> <cmd> <args...>'
+	print 'where:'
+	print ' -h                      Show this help'
+	print ' --min-per-node d        Minimum degree'
+	print ' --max-per-node d        Maximum degree'
+	print ' --monitor t             --monitor argument for global rebalance.py'
+	print ' --wait time             Wait time for global rebalance.py'
+	print ' --extrae                Generate extrae trace'
+	print ' --extrae-as-threads     Set NANOS6_EXTRAE_AS_THREADS=1 (default)'
+	print ' --no-extrae-as-threads  Unset NANOS6_EXTRAE_AS_THREADS'
+	return 1
 
 # Run experiments
 def main(argv):
@@ -252,12 +315,17 @@ def main(argv):
 	global min_per_node
 	global max_per_node
 	global monitor_time
+	global extrae
 	os.environ['NANOS6_ENABLE_DLB'] = '1'
-	policies = ['local', 'global']
+	policies = []
+	threads = []
 
 	try:
 		opts, args = getopt.getopt( argv[1:],
-									'h', ['help', 'wait=', 'min-per-node=', 'max-per-node=', 'monitor=', 'local', 'global'] )
+									'h', ['help', 'wait=', 'min-per-node=',
+									      'max-per-node=', 'monitor=', 'local',
+										  'global', 'extrae', 'extrae-as-threads',
+										  'no-extrae-as-threads', 'no-rebalance'] )
 
 	except getopt.error, msg:
 		print msg
@@ -275,10 +343,23 @@ def main(argv):
 		elif o == '--monitor':
 			monitor_time = float(a)
 		elif o == '--local':
-			policies = ['local']
+			policies.append('local')
 		elif o == '--global':
-			policies = ['global']
+			policies.append('global')
+		elif o == '--no-rebalance':
+			policies.append('no-rebalance')
+		elif o == '--extrae':
+			extrae = True
+		elif o == '--extrae-as-threads':
+			threads.append(True)
+		elif o == '--no-extrae-as-threads':
+			threads.append(False)
 
+	if threads == []:
+		threads = [True]
+	if policies == []:
+		policies = ['global', 'local']
+	
 	assert len(args) >= 2
 	num_nodes = int(args[0])
 	cmd = ' '.join(args[1:])
@@ -290,14 +371,15 @@ def main(argv):
 			if deg >= min_per_node and deg <= max_per_node:
 
 				for policy in policies:
-					# Clean DLB
-					do_cmd('mpirun -np %d dlb_shm -d' % num_nodes)
+					for thread in threads:
+						# Clean DLB
+						do_cmd('mpirun -np %d dlb_shm -d' % num_nodes)
 
-					run_experiment(nodes, deg, desc, cmd, policy)
+						run_experiment(nodes, deg, desc, cmd, policy, thread)
 
-					time.sleep(1)
-					while os.path.exists('.kill'):
 						time.sleep(1)
+						while os.path.exists('.kill'):
+							time.sleep(1)
 
 	return 0
 
