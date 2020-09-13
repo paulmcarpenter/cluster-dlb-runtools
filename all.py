@@ -206,7 +206,7 @@ splits = { (2,1) : '0;1',
 def do_cmd(s):
 	print s
 	sys.stdout.flush()
-	os.system(s)
+	return os.system(s)
 
 def translate(string, d):
 	s = ''
@@ -272,7 +272,10 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 		if 'NANOS6_EXTRAE_AS_THREADS' in os.environ.keys():
 			del os.environ['NANOS6_EXTRAE_AS_THREADS']
 	s += 'mpirun -np %d %s ' % (nodes*deg, cmd)
-	do_cmd(s)
+	retval = do_cmd(s)
+
+	if retval != 0:
+		return retval
 
 	if rebalance:
 		do_cmd('touch .kill')
@@ -294,6 +297,8 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 		do_cmd('mv TRACE.mpits set-0 *.prv *.pcf *.row ' + tracedir)
 		if not rebalance_filename is None:
 			do_cmd('mv ' + rebalance_filename + ' ' + tracedir)
+
+	return 0
 
 def Usage():
 	print '.all.py <options>  <num_nodes> <cmd> <args...>'
@@ -375,7 +380,9 @@ def main(argv):
 						# Clean DLB
 						do_cmd('mpirun -np %d dlb_shm -d' % num_nodes)
 
-						run_experiment(nodes, deg, desc, cmd, policy, thread)
+						retval = run_experiment(nodes, deg, desc, cmd, policy, thread)
+						if retval != 0:
+							return 1
 
 						time.sleep(1)
 						while os.path.exists('.kill'):
