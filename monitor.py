@@ -3,13 +3,69 @@
 import os
 import sys
 import time
+import getopt
 
 def read_map_entry(label, line):
 	s = line.split()
 	assert(s[0] == label)
 	return int(s[1])
 
+def Usage():
+	print './monitor.py <options>'
+	print 'where:'
+	print ' -h                      Show this help'
+	print ' --alloc                 Show allocated #cores'
+	print ' --enabled               Show enabled #cores from DLB'
+	print ' --busy                  Show busy #cores'
+	print ' --localtasks            Show local ready tasks'
+	print ' --totaltasks            Show total ready tasks in group'
+	return 1
+
+fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d'}
+
+def format_value(value, typ):
+	field = value[typ]
+	if typ in ['localtasks', 'totaltasks']:
+		if field > 999:
+			return '>999'
+	return fmt_spec[typ] % field
+
+fmt_width = {'alloc': 2, 'enabled': 2, 'busy': 5, 'localtasks' : 4, 'totaltasks' : 4}
+
 def main(argv):
+
+	cols = []
+
+	try:
+		opts, args = getopt.getopt( argv[1:],
+									'h', ['help', 'alloc', 'enabled', 'busy',
+										  'localtasks', 'totaltasks'] )
+
+	except getopt.error, msg:
+		print msg
+		print "for help use --help"
+		sys.exit(2)
+	for o, a in opts:
+		if o in ('-h', '--help'):
+			return Usage()
+		if o == '--alloc':
+			cols.append('alloc')
+		elif o == '--enabled':
+			cols.append('enabled')
+		elif o == '--busy':
+			cols.append('busy')
+		elif o == '--localtasks':
+			cols.append('localtasks')
+		elif o == '--totaltasks':
+			cols.append('totaltasks')
+	
+	if len(cols) == 0:
+		cols = ['enabled', 'busy']
+
+	empty_fmt_width = sum([fmt_width[col] for col in cols]) + len(cols)-1
+	empty_fmt = '%' + str(empty_fmt_width) + 's'
+	print 'empty_fmt', empty_fmt
+
 	extranksOnNode = {}
 	extranks = []
 	gn = {}
@@ -38,31 +94,32 @@ def main(argv):
 		files[extrank] = open('.hybrid/utilization%d' % extrank, 'r')
 
 	for node in range(0, numNodes):
-		fmt = '%' + str(9 * maxGroup) + 's'
+		fmt = '%' + str((empty_fmt_width+1) * maxGroup) + 's'
 		print fmt % ('node %d' % node), '| ',
 	print
 
 	for node in range(0, numNodes):
 		for group in range(0, maxGroup):
 			if (group,node) in gn:
-				print '%8s' % ('g%d' % group),
+				print empty_fmt % ('g%d' % group),
 			else:
-				print '%8s' % '',
+				print empty_fmt  % '',
 		print ' | ',
 	print
 	for node in range(0, numNodes):
 		for group in range(0, maxGroup):
 			if (group,node) in gn:
-				print '%8s' % ('e%d' % gn[(group,node)]),
+				print empty_fmt  % ('e%d' % gn[(group,node)]),
 			else:
-				print '%8s' % '',
+				print empty_fmt  % '',
 		print ' | ',
 	print
 
 	prev_timestamp = 0
 	while True:
-		local_alloc = {}
-		busy = {}
+		values = dict([ (extrank, {}) for extrank in extranks])
+		# local_alloc = {}
+		# busy = {}
 		ok = True
 		timestamp = None
 		atend = False
@@ -97,8 +154,11 @@ def main(argv):
 				timestamp = float(s[0])
 			else:
 				timestamp = min(timestamp, float(s[0]))
-			local_alloc[extrank] = int(s[2])
-			busy[extrank] = float(s[3])
+			values[extrank]['alloc'] = int(s[1])
+			values[extrank]['enabled'] = int(s[2])
+			values[extrank]['busy'] = float(s[3])
+			values[extrank]['localtasks'] = int(s[4])
+			values[extrank]['totaltasks'] = int(s[4])
 		
 		if ok:
 			# print '%3.1f' % timestamp,
@@ -106,9 +166,12 @@ def main(argv):
 				for group in range(0, maxGroup):
 					if (group,node) in gn:
 						extrank = gn[(group,node)]
-						print '%2d %4.1f ' % (local_alloc[extrank], busy[extrank]),
+						#print '%2d %4.1f ' % (local_alloc[extrank], busy[extrank]),
+						for col in cols:
+							print format_value(values[extrank], col),
+						print '',
 					else:
-						print '%8s' % '-',
+						print empty_fmt % '-',
 				print ' | ',
 			print
 
