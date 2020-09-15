@@ -10,6 +10,7 @@ min_per_node = 0
 max_per_node = 1000
 monitor_time = None
 extrae = False
+continue_after_error = False
 
 splits = { (2,1) : '0;1',
 (3,1) : '0;1;2',
@@ -295,6 +296,7 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 		do_cmd('rm -rf ' + tracedir)
 		do_cmd('mkdir -p ' + tracedir)
 		do_cmd('mv TRACE.mpits set-0 *.prv *.pcf *.row ' + tracedir)
+		do_cmd('mv .hybrid/ ' + tracedir)
 		if not rebalance_filename is None:
 			do_cmd('mv ' + rebalance_filename + ' ' + tracedir)
 
@@ -321,6 +323,7 @@ def main(argv):
 	global max_per_node
 	global monitor_time
 	global extrae
+	global continue_after_error
 	os.environ['NANOS6_ENABLE_DLB'] = '1'
 	policies = []
 	threads = []
@@ -330,7 +333,8 @@ def main(argv):
 									'h', ['help', 'wait=', 'min-per-node=',
 									      'max-per-node=', 'monitor=', 'local',
 										  'global', 'extrae', 'extrae-as-threads',
-										  'no-extrae-as-threads', 'no-rebalance'] )
+										  'no-extrae-as-threads', 'no-rebalance',
+										  'continue-after-error'] )
 
 	except getopt.error, msg:
 		print msg
@@ -359,6 +363,8 @@ def main(argv):
 			threads.append(True)
 		elif o == '--no-extrae-as-threads':
 			threads.append(False)
+		elif o == '--continue-after-error':
+			continue_after_error = True
 
 	if threads == []:
 		threads = [True]
@@ -381,7 +387,7 @@ def main(argv):
 						do_cmd('mpirun -np %d dlb_shm -d' % num_nodes)
 
 						retval = run_experiment(nodes, deg, desc, cmd, policy, thread)
-						if retval != 0:
+						if retval != 0 and (not continue_after_error):
 							return 1
 
 						time.sleep(1)
