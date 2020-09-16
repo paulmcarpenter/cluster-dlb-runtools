@@ -19,18 +19,20 @@ def Usage():
 	print ' --busy                  Show busy #cores'
 	print ' --localtasks            Show local ready tasks'
 	print ' --totaltasks            Show total ready tasks in group'
+	print ' --promised              Show local num. promised tasks'
+	print ' --immovable             Show local num. immovable tasks'
 	return 1
 
-fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d'}
+fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d', 'promised' : '%4d', 'immovable' : '%4d'}
 
 def format_value(value, typ):
 	field = value[typ]
-	if typ in ['localtasks', 'totaltasks']:
-		if field > 999:
+	if typ in ['localtasks', 'totaltasks', 'promised', 'immovable']:
+		if False and field > 999:
 			return '>999'
 	return fmt_spec[typ] % field
 
-fmt_width = {'alloc': 2, 'enabled': 2, 'busy': 5, 'localtasks' : 4, 'totaltasks' : 4}
+fmt_width = {'alloc': 2, 'enabled': 2, 'busy': 5, 'localtasks' : 4, 'totaltasks' : 4, 'promised' : 4, 'immovable' : 4}
 
 def main(argv):
 
@@ -39,7 +41,8 @@ def main(argv):
 	try:
 		opts, args = getopt.getopt( argv[1:],
 									'h', ['help', 'alloc', 'enabled', 'busy',
-										  'localtasks', 'totaltasks'] )
+										  'localtasks', 'totaltasks',
+										  'promised', 'immovable'] )
 
 	except getopt.error, msg:
 		print msg
@@ -58,6 +61,10 @@ def main(argv):
 			cols.append('localtasks')
 		elif o == '--totaltasks':
 			cols.append('totaltasks')
+		elif o == '--promised':
+			cols.append('promised')
+		elif o == '--immovable':
+			cols.append('immovable')
 	
 	if len(cols) == 0:
 		cols = ['enabled', 'busy']
@@ -133,7 +140,7 @@ def main(argv):
 					break
 				line = newline
 				s = newline.split()
-				if len(s) == 6:
+				if len(s) >= 6:
 					ts = float(s[0])
 					if timestamp is None:
 						timestamp = ts
@@ -158,7 +165,9 @@ def main(argv):
 			values[extrank]['enabled'] = int(s[2])
 			values[extrank]['busy'] = float(s[3])
 			values[extrank]['localtasks'] = int(s[4])
-			values[extrank]['totaltasks'] = int(s[4])
+			values[extrank]['totaltasks'] = int(s[5])
+			values[extrank]['promised'] = int(s[6])
+			values[extrank]['immovable'] = int(s[7])
 		
 		if ok:
 			# print '%3.1f' % timestamp,
@@ -176,7 +185,7 @@ def main(argv):
 			print
 
 		if atend:
-			time.sleep(2)
+			time.sleep(1)
 			
 if __name__ == '__main__':
 	sys.exit(main(sys.argv))
