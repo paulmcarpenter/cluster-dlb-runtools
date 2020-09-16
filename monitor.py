@@ -5,6 +5,36 @@ import sys
 import time
 import getopt
 
+use_colours = True
+
+def black(s):
+    return s
+
+def weak_red(s):
+    return '\033[0;31m' + s + '\033[0;m'  if use_colours else s
+
+def red(s):
+    return '\033[1;31m' + s + '\033[0;m'  if use_colours else s
+
+def weak_green(s):
+    return '\033[0;32m' + s + '\033[0;m'  if use_colours else s
+
+def green(s):
+    return '\033[1;32m' + s + '\033[0;m'  if use_colours else s
+
+def weak_blue(s):
+    return '\033[0;34m' + s + '\033[0;m'  if use_colours else s
+
+def blue(s):
+    return '\033[1;34m' + s + '\033[0;m'  if use_colours else s
+
+def weak_magenta(s):
+    return '\033[0;35m' + s + '\033[0;m'  if use_colours else s
+
+def magenta(s):
+    return '\033[1;35m' + s + '\033[0;m'  if use_colours else s
+
+
 def read_map_entry(label, line):
 	s = line.split()
 	assert(s[0] == label)
@@ -23,16 +53,34 @@ def Usage():
 	print ' --immovable             Show local num. immovable tasks'
 	return 1
 
-fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d', 'promised' : '%4d', 'immovable' : '%4d'}
+fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d', 'promised' : '%4d', 'immovable' : '%4d', 'requests' : '%4d', 'requestacks' : '%4d', '10' : '%4d'}
 
 def format_value(value, typ):
 	field = value[typ]
 	if typ in ['localtasks', 'totaltasks', 'promised', 'immovable']:
 		if False and field > 999:
 			return '>999'
-	return fmt_spec[typ] % field
+	formatted = fmt_spec[typ] % field
+	if typ == 'alloc':
+		return red(formatted)
+	elif typ == 'enabled':
+		return weak_red(formatted)
+	elif typ == 'busy':
+		return magenta(formatted)
+	elif typ == 'localtasks':
+		return green(formatted)
+	elif typ == 'totaltasks':
+		return weak_green(formatted)
+	elif typ == 'requests':
+		return blue(formatted)
+	elif typ == 'requestacks':
+		return weak_blue(formatted)
+	elif typ == '10':
+		return blue(formatted)
+	else:
+		return formatted
 
-fmt_width = {'alloc': 2, 'enabled': 2, 'busy': 5, 'localtasks' : 4, 'totaltasks' : 4, 'promised' : 4, 'immovable' : 4}
+fmt_width = {'alloc': 2, 'enabled': 2, 'busy': 5, 'localtasks' : 4, 'totaltasks' : 4, 'promised' : 4, 'immovable' : 4, 'requests' : 4, 'requestacks' : 4, '10' : 4}
 
 def main(argv):
 
@@ -42,7 +90,9 @@ def main(argv):
 		opts, args = getopt.getopt( argv[1:],
 									'h', ['help', 'alloc', 'enabled', 'busy',
 										  'localtasks', 'totaltasks',
-										  'promised', 'immovable'] )
+										  'promised', 'immovable',
+										  'requests', 'requestacks',
+										  '10'] )
 
 	except getopt.error, msg:
 		print msg
@@ -65,6 +115,12 @@ def main(argv):
 			cols.append('promised')
 		elif o == '--immovable':
 			cols.append('immovable')
+		elif o == '--requests':
+			cols.append('requests')
+		elif o == '--requestacks':
+			cols.append('requestacks')
+		elif o == '--10':
+			cols.append('10')
 	
 	if len(cols) == 0:
 		cols = ['enabled', 'busy']
@@ -168,6 +224,11 @@ def main(argv):
 			values[extrank]['totaltasks'] = int(s[5])
 			values[extrank]['promised'] = int(s[6])
 			values[extrank]['immovable'] = int(s[7])
+			if len(s) >= 9:
+				values[extrank]['requests'] = int(s[8])
+				values[extrank]['requestacks'] = int(s[9])
+			if len(s) >= 11:
+				values[extrank]['10'] = int(s[10])
 		
 		if ok:
 			# print '%3.1f' % timestamp,
