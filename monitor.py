@@ -53,7 +53,9 @@ def Usage():
 	print ' --immovable             Show local num. immovable tasks'
 	return 1
 
-fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d', 'promised' : '%4d', 'immovable' : '%4d', 'requests' : '%4d', 'requestacks' : '%4d', '10' : '%4d'}
+fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d',
+			'promised' : '%4d', 'immovable' : '%4d', 'requests' : '%4d', 'requestacks' : '%4d', '10' : '%4d',
+			'11' : '%4d'}
 
 def format_value(value, typ):
 	field = value[typ]
@@ -77,22 +79,26 @@ def format_value(value, typ):
 		return weak_blue(formatted)
 	elif typ == '10':
 		return blue(formatted)
+	elif typ == '11':
+		return blue(formatted)
 	else:
 		return formatted
 
-fmt_width = {'alloc': 2, 'enabled': 2, 'busy': 5, 'localtasks' : 4, 'totaltasks' : 4, 'promised' : 4, 'immovable' : 4, 'requests' : 4, 'requestacks' : 4, '10' : 4}
+fmt_width = {'alloc': 2, 'enabled': 2, 'busy': 5, 'localtasks' : 4, 'totaltasks' : 4, 'promised' : 4, 'immovable' : 4, 
+			'requests' : 4, 'requestacks' : 4, '10' : 4, '11' : 4}
 
 def main(argv):
 
 	cols = []
+	squash = False
 
 	try:
 		opts, args = getopt.getopt( argv[1:],
-									'h', ['help', 'alloc', 'enabled', 'busy',
+									'h', ['help', 'squash', 'alloc', 'enabled', 'busy',
 										  'localtasks', 'totaltasks',
 										  'promised', 'immovable',
 										  'requests', 'requestacks',
-										  '10'] )
+										  '10', '11'] )
 
 	except getopt.error, msg:
 		print msg
@@ -121,13 +127,21 @@ def main(argv):
 			cols.append('requestacks')
 		elif o == '--10':
 			cols.append('10')
+		elif o == '--11':
+			cols.append('11')
+		elif o == '--squash':
+			squash = True
 	
 	if len(cols) == 0:
 		cols = ['enabled', 'busy']
 
 	empty_fmt_width = sum([fmt_width[col] for col in cols]) + len(cols)-1
 	empty_fmt = '%' + str(empty_fmt_width) + 's'
-	print 'empty_fmt', empty_fmt
+
+	if squash:
+		none_fmt = '%4s'
+	else:
+		none_fmt = empty_fmt
 
 	extranksOnNode = {}
 	extranks = []
@@ -166,7 +180,7 @@ def main(argv):
 			if (group,node) in gn:
 				print empty_fmt % ('g%d' % group),
 			else:
-				print empty_fmt  % '',
+				print none_fmt  % '',
 		print ' | ',
 	print
 	for node in range(0, numNodes):
@@ -174,7 +188,7 @@ def main(argv):
 			if (group,node) in gn:
 				print empty_fmt  % ('e%d' % gn[(group,node)]),
 			else:
-				print empty_fmt  % '',
+				print none_fmt  % '',
 		print ' | ',
 	print
 
@@ -229,6 +243,8 @@ def main(argv):
 				values[extrank]['requestacks'] = int(s[9])
 			if len(s) >= 11:
 				values[extrank]['10'] = int(s[10])
+			if len(s) >= 12:
+				values[extrank]['11'] = int(s[11])
 		
 		if ok:
 			# print '%3.1f' % timestamp,
@@ -241,7 +257,7 @@ def main(argv):
 							print format_value(values[extrank], col),
 						print '',
 					else:
-						print empty_fmt % '-',
+						print none_fmt % '-',
 				print ' | ',
 			print
 
