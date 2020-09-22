@@ -45,7 +45,9 @@ def Usage():
 	print 'where:'
 	print ' -h                      Show this help'
 	print ' --alloc                 Show allocated #cores'
-	print ' --enabled               Show enabled #cores from DLB'
+	print ' --enabled               Show active owned #cores from DLB'
+	print ' --owned                 Show owned #cores from DLB'
+	print ' --lent                  Show number lent cores from DLB'
 	print ' --busy                  Show busy #cores'
 	print ' --localtasks            Show local ready tasks'
 	print ' --totaltasks            Show total ready tasks in group'
@@ -54,8 +56,8 @@ def Usage():
 	return 1
 
 fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d',
-			'promised' : '%4d', 'immovable' : '%4d', 'requests' : '%4d', 'requestacks' : '%4d', '10' : '%4d',
-			'11' : '%4d'}
+			'promised' : '%4d', 'immovable' : '%4d', 'requests' : '%4d', 'requestacks' : '%4d', 'owned' : '%4d',
+			'lent' : '%4d', 'borrowed' : '%4d', '13' : '%4d'}
 
 def format_value(value, typ):
 	field = value[typ]
@@ -77,20 +79,24 @@ def format_value(value, typ):
 		return blue(formatted)
 	elif typ == 'requestacks':
 		return weak_blue(formatted)
-	elif typ == '10':
+	elif typ == 'owned':
 		return blue(formatted)
-	elif typ == '11':
+	elif typ == 'lent':
+		return blue(formatted)
+	elif typ == 'borrowed':
+		return blue(formatted)
+	elif typ == '13':
 		return blue(formatted)
 	else:
 		return formatted
 
 fmt_width = {'alloc': 2, 'enabled': 2, 'busy': 5, 'localtasks' : 4, 'totaltasks' : 4, 'promised' : 4, 'immovable' : 4, 
-			'requests' : 4, 'requestacks' : 4, '10' : 4, '11' : 4}
+			'requests' : 4, 'requestacks' : 4, 'owned' : 4, 'lent' : 4, 'borrowed' : 4, '13' : 4}
 
 def main(argv):
 
 	cols = []
-	squash = False
+	squash = True
 
 	try:
 		opts, args = getopt.getopt( argv[1:],
@@ -98,7 +104,7 @@ def main(argv):
 										  'localtasks', 'totaltasks',
 										  'promised', 'immovable',
 										  'requests', 'requestacks',
-										  '10', '11'] )
+										  'owned', 'lent', 'borrowed', '13'] )
 
 	except getopt.error, msg:
 		print msg
@@ -125,15 +131,19 @@ def main(argv):
 			cols.append('requests')
 		elif o == '--requestacks':
 			cols.append('requestacks')
-		elif o == '--10':
-			cols.append('10')
-		elif o == '--11':
-			cols.append('11')
+		elif o == '--owned':
+			cols.append('owned')
+		elif o == '--lent':
+			cols.append('lent')
+		elif o == '--borrowed':
+			cols.append('borrowed')
+		elif o == '--13':
+			cols.append('13')
 		elif o == '--squash':
 			squash = True
 	
 	if len(cols) == 0:
-		cols = ['enabled', 'busy']
+		cols = ['alloc', 'enabled', 'busy']
 
 	empty_fmt_width = sum([fmt_width[col] for col in cols]) + len(cols)-1
 	empty_fmt = '%' + str(empty_fmt_width) + 's'
@@ -238,13 +248,14 @@ def main(argv):
 			values[extrank]['totaltasks'] = int(s[5])
 			values[extrank]['promised'] = int(s[6])
 			values[extrank]['immovable'] = int(s[7])
-			if len(s) >= 9:
-				values[extrank]['requests'] = int(s[8])
-				values[extrank]['requestacks'] = int(s[9])
-			if len(s) >= 11:
-				values[extrank]['10'] = int(s[10])
-			if len(s) >= 12:
-				values[extrank]['11'] = int(s[11])
+			values[extrank]['requests'] = int(s[8])
+			values[extrank]['requestacks'] = int(s[9])
+			values[extrank]['owned'] = int(s[10])
+			values[extrank]['lent'] = int(s[11])
+			values[extrank]['borrowed'] = int(s[12])
+			if len(s) >= 14:
+				values[extrank]['13'] = int(s[13])
+
 		
 		if ok:
 			# print '%3.1f' % timestamp,
