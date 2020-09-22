@@ -4,6 +4,7 @@ import random
 import os
 import time
 import getopt
+import re
 
 use_dlb = True
 wait = None
@@ -207,6 +208,16 @@ splits = { (2,1) : '0;1',
 (31,7) : '0,1,20,21,22,26,27;1,2,20,21,22,26,27;2,3,24,25,26,28,29;3,4,25,26,27,28,29;4,5,8,9,20,22,23;5,1,6,8,9,21,23;6,7,20,21,22,23,27;7,8,9,20,21,22,23;8,9,24,25,28,29,30;9,10,24,25,28,29,30;10,4,6,7,11,12,13;11,6,7,10,12,13,15;12,2,4,5,6,7,13;13,4,5,6,7,11,14;14,0,2,3,4,5,15;15,2,3,4,5,7,16;16,0,1,2,3,8,17;17,0,1,2,3,5,18;18,0,1,8,9,19,23;19,0,1,3,8,9,20;20,10,11,12,15,17,21;21,14,15,17,19,22,30;22,14,15,17,18,19,23;23,14,16,18,19,24,30;24,6,10,12,13,16,25;25,10,11,12,13,16,26;26,10,11,13,16,18,27;27,11,12,14,15,17,28;28,18,19,24,25,29,30;29,14,16,17,18,19,30;30,0,24,26,27,28,29' }
 
 
+def find_paraver_file():
+	files = os.listdir('.')
+	for f in files:
+		print f
+		m = re.match('^(.*)\.prv', f)
+		if m:
+			return m.group(1)
+	return None
+		
+
 
 def do_cmd(s):
 	print s
@@ -312,10 +323,15 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 		do_cmd('mpi2prv -f TRACE.mpits')
 
 		# Now move traces to a subdirectory
-		tracedir = trace_location + '/' + tracedir_name(desc, cmd, policy, extrae_as_threads, no_fill, monitor_time)
+		tracefname = tracedir_name(desc, cmd, policy, extrae_as_threads, no_fill, monitor_time)
+		tracedir = trace_location + '/' + tracefname
+		prvroot = find_paraver_file()
 		do_cmd('rm -rf ' + tracedir)
 		do_cmd('mkdir -p ' + tracedir)
-		do_cmd('mv TRACE.mpits set-0 *.prv *.pcf *.row ' + tracedir)
+		do_cmd('mv TRACE.mpits set-0 ' + tracedir)
+		do_cmd('mv ' + prvroot + '.prv ' + tracedir + '/' + tracefname + '.prv')
+		do_cmd('mv ' + prvroot + '.pcf ' + tracedir + '/' + tracefname + '.pcf')
+		do_cmd('mv ' + prvroot + '.row ' + tracedir + '/' + tracefname + '.row')
 		do_cmd('mv .hybrid/ ' + tracedir)
 		if not rebalance_filename is None:
 			do_cmd('mv ' + rebalance_filename + ' ' + tracedir)
