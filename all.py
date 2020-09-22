@@ -5,12 +5,16 @@ import os
 import time
 import getopt
 
+use_dlb = True
 wait = None
 min_per_node = 0
 max_per_node = 1000
 monitor_time = None
 extrae = False
 continue_after_error = False
+no_fill = False
+trace_location = '/gpfs/scratch/bsc28/bsc28600/work/20200903_nanos6-cluster/traces'
+local_period = None
 
 splits = { (2,1) : '0;1',
 (3,1) : '0;1;2',
@@ -215,14 +219,23 @@ def translate(string, d):
 		s += d.get(ch, ch)
 	return s
 
-def tracedir_name(desc, cmd, policy, extrae_as_threads):
+def tracedir_name(desc, cmd, policy, extrae_as_threads, no_fill, monitor_time):
 	cmd2 = translate(cmd, {' ': '_', '/' : '_'})
 	desc2 = translate(desc, {';': '_'})
-	threads = ''
+	opts = ''
+
 	if not extrae_as_threads:
-		threads = '-nothreads'
+		opts += '-nothreads'
+	if no_fill:
+		opts += '-no-fill'
+	if policy == 'global':
+		if not monitor_time is None:
+			opts += '-%d' % monitor_time
+	elif policy == 'local':
+		if not local_period is None:
+			opts += '-%d' % local_period
 		
-	return 'trace-%s-%s-%s%s' % (cmd2, desc2, policy, threads)
+	return 'trace-%s-%s-%s%s-%s' % (cmd2, desc2, policy, opts, str(os.getpid()))
 
 def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=None):
 	global wait
@@ -254,6 +267,8 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 			opts += '--wait %d ' % wait
 		if not monitor_time is None:
 			opts += '--monitor %f ' % monitor_time
+		if no_fill:
+			opts += '--no-fill '
 		rebalance_filename = 'rebalance-out-%d-%d.txt' % (nodes,deg)
 		do_cmd('${MERCURIUM}/../rebalance/rebalance.py ' + opts + '10000 > ' + rebalance_filename + ' &')
 		time.sleep(1)
@@ -272,6 +287,11 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 	else:
 		if 'NANOS6_EXTRAE_AS_THREADS' in os.environ.keys():
 			del os.environ['NANOS6_EXTRAE_AS_THREADS']
+	if local_period is not None:
+		s = s + 'NANOS6_LOCAL_TIME_PERIOD=%d ' % local_period
+	else:
+		if 'NANOS6_LOCAL_TIME_PERIOD' in os.environ.keys():
+			del os.environ['NANOS6_LOCAL_TIME_PERIOD']
 	s += 'mpirun -np %d %s ' % (nodes*deg, cmd)
 	retval = do_cmd(s)
 
@@ -292,7 +312,7 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 		do_cmd('mpi2prv -f TRACE.mpits')
 
 		# Now move traces to a subdirectory
-		tracedir = tracedir_name(desc, cmd, policy, extrae_as_threads)
+		tracedir = trace_location + '/' + tracedir_name(desc, cmd, policy, extrae_as_threads, no_fill, monitor_time)
 		do_cmd('rm -rf ' + tracedir)
 		do_cmd('mkdir -p ' + tracedir)
 		do_cmd('mv TRACE.mpits set-0 *.prv *.pcf *.row ' + tracedir)
@@ -309,6 +329,8 @@ def Usage():
 	print ' --min-per-node d        Minimum degree'
 	print ' --max-per-node d        Maximum degree'
 	print ' --monitor t             --monitor argument for global rebalance.py'
+	print ' --local-period          NANOS6_LOCAL_TIME_PERIOD for local policy'
+	print ' --no-fill               --no-fill argument for global rebalance.py'
 	print ' --wait time             Wait time for global rebalance.py'
 	print ' --extrae                Generate extrae trace'
 	print ' --extrae-as-threads     Set NANOS6_EXTRAE_AS_THREADS=1 (default)'
@@ -324,6 +346,9 @@ def main(argv):
 	global monitor_time
 	global extrae
 	global continue_after_error
+	global use_dlb
+	global no_fill
+	global local_period
 	os.environ['NANOS6_ENABLE_DLB'] = '1'
 	policies = []
 	threads = []
@@ -334,7 +359,8 @@ def main(argv):
 									      'max-per-node=', 'monitor=', 'local',
 										  'global', 'extrae', 'extrae-as-threads',
 										  'no-extrae-as-threads', 'no-rebalance',
-										  'continue-after-error'] )
+										  'continue-after-error', 'no-dlb', 'no-fill',
+										  'local-period='] )
 
 	except getopt.error, msg:
 		print msg
@@ -352,19 +378,32 @@ def main(argv):
 		elif o == '--monitor':
 			monitor_time = float(a)
 		elif o == '--local':
-			policies.append('local')
+			if not 'local' in policies:
+				policies.append('local')
 		elif o == '--global':
-			policies.append('global')
+			if not 'global' in policies:
+				policies.append('global')
 		elif o == '--no-rebalance':
 			policies.append('no-rebalance')
 		elif o == '--extrae':
 			extrae = True
 		elif o == '--extrae-as-threads':
-			threads.append(True)
+			if not True in threads:
+				threads.append(True)
 		elif o == '--no-extrae-as-threads':
-			threads.append(False)
+			print '** --no-extrae-as-threads does work well'
+			sys.exit(1)
+			if not False in threads:
+				threads.append(False)
 		elif o == '--continue-after-error':
 			continue_after_error = True
+		elif o == '--no-dlb':
+			use_dlb = False
+			os.environ['NANOS6_ENABLE_DLB'] = '0'
+		elif o == '--no-fill':
+			no_fill = True
+		elif o == '--local-period':
+			local_period = int(a)
 
 	if threads == []:
 		threads = [True]
