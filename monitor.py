@@ -40,6 +40,36 @@ def read_map_entry(label, line):
 	assert(s[0] == label)
 	return int(s[1])
 
+class ReadLog:
+	def __init__(self, fp):
+		self._fp = fp
+		self._splitline = None
+		self._timestamp = None
+	
+	def try_read_next(self):
+		line = self._fp.readline()
+		if line == '':
+			self._splitline = None
+			self._timestamp = None
+		else:
+			self._splitline = line.split()
+			self._timestamp = float(self._splitline[0])
+
+	def timestamp(self):
+		if self._splitline is None:
+			self.try_read_next()
+		return self._timestamp
+
+	def current(self):
+		if self._splitline is None:
+			self.try_read_next()
+		return self._splitline
+
+	def get_next(self):
+		self.try_read_next()
+
+
+
 def Usage():
 	print './monitor.py <options>'
 	print 'where:'
@@ -58,6 +88,10 @@ def Usage():
 fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d',
 			'promised' : '%4d', 'immovable' : '%4d', 'requests' : '%4d', 'requestacks' : '%4d', 'owned' : '%4d',
 			'lent' : '%4d', 'borrowed' : '%4d', '13' : '%4d'}
+
+fmt_no_value = {'alloc' : '%2s', 'enabled' : '%2s', 'busy' : '%4s', 'localtasks' : '%4s', 'totaltasks' : '%4s',
+			'promised' : '%4s', 'immovable' : '%4s', 'requests' : '%4s', 'requestacks' : '%4s', 'owned' : '%4s',
+			'lent' : '%4s', 'borrowed' : '%4s', '13' : '%4s'}
 
 def format_value(value, typ):
 	field = value[typ]
@@ -90,6 +124,9 @@ def format_value(value, typ):
 	else:
 		return formatted
 
+def no_value(typ):
+	return fmt_no_value[typ] % '#'
+
 fmt_width = {'alloc': 2, 'enabled': 2, 'busy': 5, 'localtasks' : 4, 'totaltasks' : 4, 'promised' : 4, 'immovable' : 4, 
 			'requests' : 4, 'requestacks' : 4, 'owned' : 4, 'lent' : 4, 'borrowed' : 4, '13' : 4}
 
@@ -97,6 +134,7 @@ def main(argv):
 
 	cols = []
 	squash = True
+	print_timestamp = True
 
 	try:
 		opts, args = getopt.getopt( argv[1:],
@@ -202,78 +240,67 @@ def main(argv):
 		print ' | ',
 	print
 
-	prev_timestamp = 0
+	readlogs = dict( [(extrank, ReadLog(files[extrank])) for extrank in extranks])
+
+	curr_timestamp = 0
 	while True:
-		values = dict([ (extrank, {}) for extrank in extranks])
-		# local_alloc = {}
-		# busy = {}
-		ok = True
-		timestamp = None
+		values = {}
 		atend = False
+		num_valid = 0
+		if print_timestamp:
+			print '%5.1f' % curr_timestamp,
 		for extrank in extranks:
 
-			line = None
+			# Get current line from all
+			s = None
 			while True:
-				newline = files[extrank].readline()
-				if newline == '':
-					atend = True
+				if readlogs[extrank].timestamp() is None:
+					time.sleep(0.1)
+					continue
+				if readlogs[extrank].timestamp() > curr_timestamp:
+					# Keep for next time, nothing to report
 					break
-				line = newline
-				s = newline.split()
-				if len(s) >= 6:
-					ts = float(s[0])
-					if timestamp is None:
-						timestamp = ts
-					else:
-						timestamp = max(timestamp, ts)
-					# Gone far enough ahead for this rank
-					if timestamp > prev_timestamp + 1.99:
-						break
-			if line is None:
-				ok = False
-				break
-			s = line.split()
-			if len(s) < 6:
-				ok = False
-				break
-			# Timestamp, global alloc, local alloc, busy, num ready, tot num ready
-			if timestamp is None:
-				timestamp = float(s[0])
-			else:
-				timestamp = min(timestamp, float(s[0]))
-			values[extrank]['alloc'] = int(s[1])
-			values[extrank]['enabled'] = int(s[2])
-			values[extrank]['busy'] = float(s[3])
-			values[extrank]['localtasks'] = int(s[4])
-			values[extrank]['totaltasks'] = int(s[5])
-			values[extrank]['promised'] = int(s[6])
-			values[extrank]['immovable'] = int(s[7])
-			values[extrank]['requests'] = int(s[8])
-			values[extrank]['requestacks'] = int(s[9])
-			values[extrank]['owned'] = int(s[10])
-			values[extrank]['lent'] = int(s[11])
-			values[extrank]['borrowed'] = int(s[12])
-			if len(s) >= 14:
-				values[extrank]['13'] = int(s[13])
+				s = readlogs[extrank].current()
+				readlogs[extrank].get_next()
 
-		
-		if ok:
-			# print '%3.1f' % timestamp,
+			# Get current line from all
+			if not s is None:
+				num_valid += 1
+				values[extrank] = {}
+				values[extrank]['alloc'] = int(s[1])
+				values[extrank]['enabled'] = int(s[2])
+				values[extrank]['busy'] = float(s[3])
+				values[extrank]['localtasks'] = int(s[4])
+				values[extrank]['totaltasks'] = int(s[5])
+				values[extrank]['promised'] = int(s[6])
+				values[extrank]['immovable'] = int(s[7])
+				values[extrank]['requests'] = int(s[8])
+				values[extrank]['requestacks'] = int(s[9])
+				values[extrank]['owned'] = int(s[10])
+				values[extrank]['lent'] = int(s[11])
+				values[extrank]['borrowed'] = int(s[12])
+				if len(s) >= 14:
+					values[extrank]['13'] = int(s[13])
+
+		if num_valid > 0:
 			for node in range(0, numNodes):
 				for group in range(0, maxGroup):
 					if (group,node) in gn:
 						extrank = gn[(group,node)]
 						#print '%2d %4.1f ' % (local_alloc[extrank], busy[extrank]),
-						for col in cols:
-							print format_value(values[extrank], col),
+						if extrank in values:
+							for col in cols:
+								print format_value(values[extrank], col),
+						else:
+							for col in cols:
+								print no_value(col),
 						print '',
 					else:
 						print none_fmt % '-',
 				print ' | ',
 			print
 
-		if atend:
-			time.sleep(1)
+		curr_timestamp += 0.5
 			
 if __name__ == '__main__':
 	sys.exit(main(sys.argv))
