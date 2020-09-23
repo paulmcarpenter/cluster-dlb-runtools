@@ -74,24 +74,26 @@ def Usage():
 	print './monitor.py <options>'
 	print 'where:'
 	print ' -h                      Show this help'
+	print ' --order-by vrank/node   Group by vrank or node'
 	print ' --alloc                 Show allocated #cores'
 	print ' --enabled               Show active owned #cores from DLB'
 	print ' --owned                 Show owned #cores from DLB'
 	print ' --lent                  Show number lent cores from DLB'
 	print ' --busy                  Show busy #cores'
+	print ' --useful-busy           Show useful busy #cores'
 	print ' --localtasks            Show local ready tasks'
 	print ' --totaltasks            Show total ready tasks in group'
 	print ' --promised              Show local num. promised tasks'
 	print ' --immovable             Show local num. immovable tasks'
 	return 1
 
-fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d',
+fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'useful-busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d',
 			'promised' : '%4d', 'immovable' : '%4d', 'requests' : '%4d', 'requestacks' : '%4d', 'owned' : '%4d',
-			'lent' : '%4d', 'borrowed' : '%4d', '13' : '%4d'}
+			'lent' : '%4d', 'borrowed' : '%4d', '14' : '%4d'}
 
-fmt_no_value = {'alloc' : '%2s', 'enabled' : '%2s', 'busy' : '%4s', 'localtasks' : '%4s', 'totaltasks' : '%4s',
+fmt_no_value = {'alloc' : '%2s', 'enabled' : '%2s', 'busy' : '%4s', 'useful-busy' : '%4s', 'localtasks' : '%4s', 'totaltasks' : '%4s',
 			'promised' : '%4s', 'immovable' : '%4s', 'requests' : '%4s', 'requestacks' : '%4s', 'owned' : '%4s',
-			'lent' : '%4s', 'borrowed' : '%4s', '13' : '%4s'}
+			'lent' : '%4s', 'borrowed' : '%4s', '14' : '%4s'}
 
 def format_value(value, typ):
 	field = value[typ]
@@ -105,6 +107,8 @@ def format_value(value, typ):
 		return weak_red(formatted)
 	elif typ == 'busy':
 		return magenta(formatted)
+	elif typ == 'useful-busy':
+		return weak_magenta(formatted)
 	elif typ == 'localtasks':
 		return green(formatted)
 	elif typ == 'totaltasks':
@@ -119,7 +123,7 @@ def format_value(value, typ):
 		return blue(formatted)
 	elif typ == 'borrowed':
 		return blue(formatted)
-	elif typ == '13':
+	elif typ == '14':
 		return blue(formatted)
 	else:
 		return formatted
@@ -127,22 +131,24 @@ def format_value(value, typ):
 def no_value(typ):
 	return fmt_no_value[typ] % '#'
 
-fmt_width = {'alloc': 2, 'enabled': 2, 'busy': 5, 'localtasks' : 4, 'totaltasks' : 4, 'promised' : 4, 'immovable' : 4, 
-			'requests' : 4, 'requestacks' : 4, 'owned' : 4, 'lent' : 4, 'borrowed' : 4, '13' : 4}
+fmt_width = {'alloc': 2, 'enabled': 2, 'busy': 5, 'useful-busy': 5, 'localtasks' : 4, 'totaltasks' : 4, 'promised' : 4, 'immovable' : 4, 
+			'requests' : 4, 'requestacks' : 4, 'owned' : 4, 'lent' : 4, 'borrowed' : 4, '14' : 4}
 
 def main(argv):
 
 	cols = []
 	squash = True
 	print_timestamp = True
+	order_by = 'vrank'  # 'vrank' or 'node'
 
 	try:
 		opts, args = getopt.getopt( argv[1:],
-									'h', ['help', 'squash', 'alloc', 'enabled', 'busy',
+									'h', ['help', 'order-by',
+										  'alloc', 'enabled', 'busy', 'useful-busy',
 										  'localtasks', 'totaltasks',
 										  'promised', 'immovable',
 										  'requests', 'requestacks',
-										  'owned', 'lent', 'borrowed', '13'] )
+										  'owned', 'lent', 'borrowed', '14'] )
 
 	except getopt.error, msg:
 		print msg
@@ -157,6 +163,8 @@ def main(argv):
 			cols.append('enabled')
 		elif o == '--busy':
 			cols.append('busy')
+		elif o == '--useful-busy':
+			cols.append('useful-busy')
 		elif o == '--localtasks':
 			cols.append('localtasks')
 		elif o == '--totaltasks':
@@ -175,10 +183,15 @@ def main(argv):
 			cols.append('lent')
 		elif o == '--borrowed':
 			cols.append('borrowed')
-		elif o == '--13':
-			cols.append('13')
-		elif o == '--squash':
-			squash = True
+		elif o == '--14':
+			cols.append('14')
+		elif o == '--order-by':
+			order_by = a
+			if not order_by in ['vrank', 'group']:
+				print 'Bad order-by: valid values are vrank, group'
+				return 1
+		else:
+			assert(False)
 	
 	if len(cols) == 0:
 		cols = ['alloc', 'enabled', 'busy']
@@ -187,7 +200,7 @@ def main(argv):
 	empty_fmt = '%' + str(empty_fmt_width) + 's'
 
 	if squash:
-		none_fmt = '%4s'
+		none_fmt = '%2s'
 	else:
 		none_fmt = empty_fmt
 
@@ -218,27 +231,27 @@ def main(argv):
 	for extrank in extranks:
 		files[extrank] = open('.hybrid/utilization%d' % extrank, 'r')
 
-	for node in range(0, numNodes):
-		fmt = '%' + str((empty_fmt_width+1) * maxGroup) + 's'
-		print fmt % ('node %d' % node), '| ',
-	print
+	# for node in range(0, numNodes):
+	# 	fmt = '%' + str((empty_fmt_width+1) * maxGroup) + 's'
+	# 	print fmt % ('node %d' % node), '| ',
+	# print
 
-	for node in range(0, numNodes):
-		for group in range(0, maxGroup):
-			if (group,node) in gn:
-				print empty_fmt % ('g%d' % group),
-			else:
-				print none_fmt  % '',
-		print ' | ',
-	print
-	for node in range(0, numNodes):
-		for group in range(0, maxGroup):
-			if (group,node) in gn:
-				print empty_fmt  % ('e%d' % gn[(group,node)]),
-			else:
-				print none_fmt  % '',
-		print ' | ',
-	print
+	# for node in range(0, numNodes):
+	# 	for group in range(0, maxGroup):
+	# 		if (group,node) in gn:
+	# 			print empty_fmt % ('g%d' % group),
+	# 		else:
+	# 			print none_fmt  % '',
+	# 	print ' | ',
+	# print
+	# for node in range(0, numNodes):
+	# 	for group in range(0, maxGroup):
+	# 		if (group,node) in gn:
+	# 			print empty_fmt  % ('e%d' % gn[(group,node)]),
+	# 		else:
+	# 			print none_fmt  % '',
+	# 	print ' | ',
+	# print
 
 	readlogs = dict( [(extrank, ReadLog(files[extrank])) for extrank in extranks])
 
@@ -270,33 +283,39 @@ def main(argv):
 				values[extrank]['alloc'] = int(s[1])
 				values[extrank]['enabled'] = int(s[2])
 				values[extrank]['busy'] = float(s[3])
-				values[extrank]['localtasks'] = int(s[4])
-				values[extrank]['totaltasks'] = int(s[5])
-				values[extrank]['promised'] = int(s[6])
-				values[extrank]['immovable'] = int(s[7])
-				values[extrank]['requests'] = int(s[8])
-				values[extrank]['requestacks'] = int(s[9])
-				values[extrank]['owned'] = int(s[10])
-				values[extrank]['lent'] = int(s[11])
-				values[extrank]['borrowed'] = int(s[12])
-				if len(s) >= 14:
-					values[extrank]['13'] = int(s[13])
+				values[extrank]['useful-busy'] = float(s[4])
+				values[extrank]['localtasks'] = int(s[5])
+				values[extrank]['totaltasks'] = int(s[6])
+				values[extrank]['promised'] = int(s[7])
+				values[extrank]['immovable'] = int(s[8])
+				values[extrank]['requests'] = int(s[9])
+				values[extrank]['requestacks'] = int(s[10])
+				values[extrank]['owned'] = int(s[11])
+				values[extrank]['lent'] = int(s[12])
+				values[extrank]['borrowed'] = int(s[13])
+				if len(s) >= 15:
+					values[extrank]['14'] = int(s[14])
 
 		if num_valid > 0:
-			for node in range(0, numNodes):
-				for group in range(0, maxGroup):
-					if (group,node) in gn:
-						extrank = gn[(group,node)]
-						#print '%2d %4.1f ' % (local_alloc[extrank], busy[extrank]),
-						if extrank in values:
-							for col in cols:
-								print format_value(values[extrank], col),
-						else:
-							for col in cols:
-								print no_value(col),
-						print '',
+			if order_by == 'node':
+				extranks_pr = [  [gn[(group,node)] for group in range(0,maxGroup) if (group,node) in gn] for node in range(0, numNodes) ]
+			elif order_by == 'vrank':
+				extranks_pr = [  [gn[(group,node)] for node in range(0,numNodes) if (group,node) in gn] for group in range(0,maxGroup) ]
+			else:
+				assert false
+
+			for extranks1 in extranks_pr:
+				for extrank in extranks1:
+					#print '%2d %4.1f ' % (local_alloc[extrank], busy[extrank]),
+					if extrank in values:
+						for col in cols:
+							print format_value(values[extrank], col),
 					else:
-						print none_fmt % '-',
+						for col in cols:
+							print no_value(col),
+					print '',
+				else:
+					print none_fmt % '-',
 				print ' | ',
 			print
 
