@@ -7,13 +7,10 @@ import getopt
 import re
 
 use_dlb = True
-wait = None
 min_per_node = 0
 max_per_node = 1000
-monitor_time = None
 extrae = False
 continue_after_error = False
-no_fill = False
 trace_location = '/gpfs/scratch/bsc28/bsc28600/work/20200903_nanos6-cluster/traces'
 local_period = None
 
@@ -233,7 +230,7 @@ def translate(string, d):
 		s += d.get(ch, ch)
 	return s
 
-def tracedir_name(desc, cmd, policy, extrae_as_threads, no_fill, monitor_time):
+def tracedir_name(desc, cmd, policy):
 	cmd2 = translate(cmd, {' ': '_', '/' : '_'})
 	desc2 = translate(desc, {';': '_'})
 	global tracedir_opts
@@ -241,7 +238,6 @@ def tracedir_name(desc, cmd, policy, extrae_as_threads, no_fill, monitor_time):
 	return 'trace-%s-%s-%s%s-%s' % (cmd2, desc2, policy, tracedir_opts, str(os.getpid()))
 
 def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=None):
-	global monitor_time
 	global extrae
 	global rebalance_opts
 	
@@ -308,7 +304,7 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 		do_cmd('mpi2prv -f TRACE.mpits')
 
 		# Now move traces to a subdirectory
-		tracefname = tracedir_name(desc, cmd, policy, extrae_as_threads, no_fill, monitor_time)
+		tracefname = tracedir_name(desc, cmd, policy)
 		tracedir = trace_location + '/' + tracefname
 		prvroot = find_paraver_file()
 		do_cmd('rm -rf ' + tracedir)
@@ -323,33 +319,38 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 
 	return 0
 
+# Options to rebalance.py that are forwarded. The order matters for packing arguments
+rebalance_forwarded_opts = [ ('wait', True, 'w'),   # Option name and whether it takes an argument
+							 ('monitor', True, 'm'),
+							 ('no-fill', False, 'no-fill'),
+							 ('equal', False, 'equal'),
+							 ('min-master', True, 'M'),
+							 ('min-slave', True, 'S'),
+							 ('loads', True, 'L') ]
+
 def Usage():
 	print '.all.py <options>  <num_nodes> <cmd> <args...>'
 	print 'where:'
 	print ' -h                      Show this help'
 	print ' --min-per-node d        Minimum degree'
 	print ' --max-per-node d        Maximum degree'
-	print ' --monitor t             --monitor argument for global rebalance.py'
 	print ' --local-period          NANOS6_LOCAL_TIME_PERIOD for local policy'
-	print ' --no-fill               --no-fill argument for global rebalance.py'
-	print ' --wait time             Wait time for global rebalance.py'
 	print ' --extrae                Generate extrae trace'
 	print ' --extrae-as-threads     Set NANOS6_EXTRAE_AS_THREADS=1 (default)'
 	print ' --no-extrae-as-threads  Unset NANOS6_EXTRAE_AS_THREADS'
+	print 'Options forwarded to rebalance.py:'
+	print '\n'.join([' --%s' % name for (name,has_arg,shortname) in rebalance_forwarded_opts])
 	return 1
 
 
 # Run experiments
 def main(argv):
 
-	global wait
 	global min_per_node
 	global max_per_node
-	global monitor_time
 	global extrae
 	global continue_after_error
 	global use_dlb
-	global no_fill
 	global local_period
 	global rebalance_opts
 	global tracedir_opts
@@ -357,14 +358,19 @@ def main(argv):
 	policies = []
 	threads = []
 
+	rebalance_arg_values = {}
+
 	try:
+		rebalance_getopt = [ name + ('=' if has_arg else '') for (name, has_arg, value) in rebalance_forwarded_opts ]
+		print rebalance_getopt
+
 		opts, args = getopt.getopt( argv[1:],
-									'h', ['help', 'wait=', 'min-per-node=',
-									      'max-per-node=', 'monitor=', 'local',
+									'h', ['help', 'min-per-node=',
+									      'max-per-node=', 'local',
 										  'global', 'extrae', 'extrae-as-threads',
 										  'no-extrae-as-threads', 'no-rebalance',
-										  'continue-after-error', 'no-dlb', 'no-fill',
-										  'local-period='] )
+										  'continue-after-error', 'no-dlb',
+										  'local-period='] + rebalance_getopt )
 
 	except getopt.error, msg:
 		print msg
@@ -373,14 +379,10 @@ def main(argv):
 	for o, a in opts:
 		if o in ('-h', '--help'):
 			return Usage()
-		elif o == '--wait':
-			wait = int(a)
 		elif o == '--min-per-node':
 			min_per_node = int(a)
 		elif o == '--max-per-node':
 			max_per_node = int(a)
-		elif o == '--monitor':
-			monitor_time = float(a)
 		elif o == '--local':
 			if not 'local' in policies:
 				policies.append('local')
@@ -404,10 +406,21 @@ def main(argv):
 		elif o == '--no-dlb':
 			use_dlb = False
 			os.environ['NANOS6_ENABLE_DLB'] = '0'
-		elif o == '--no-fill':
-			no_fill = True
 		elif o == '--local-period':
 			local_period = int(a)
+		else:
+			print o
+			try:
+				options = ['--' + name for (name, has_arg, shortname) in rebalance_forwarded_opts]
+				index = options.index(o)
+				name, has_arg, shortname = rebalance_forwarded_opts[index]
+				if has_arg:
+					rebalance_arg_values[name] = a
+				else:
+					rebalance_arg_values[name] = True
+
+				print 'forwarded', o
+			except ValueError: assert False # Should not get here as getopt already checked options were valid
 
 	# Default
 	if threads == []:
@@ -431,23 +444,18 @@ def main(argv):
 
 						# Tracedir and rebalance options
 						rebalance_opts = ''
-						if not wait is None:
-							rebalance_opts += '--wait %d ' % wait
-						if not monitor_time is None:
-							rebalance_opts += '--monitor %f ' % monitor_time
-						if no_fill:
-							rebalance_opts += '--no-fill '
 						tracedir_opts = ''
-						if not extrae_as_threads:
-							tracedir_opts += '-nothreads'
-						if no_fill:
-							tracedir_opts += '-no-fill'
-						if policy == 'global':
-							if not monitor_time is None:
-								opts += '-%d' % monitor_time
-						elif policy == 'local':
+						for (arg,has_opt,shortname) in rebalance_forwarded_opts:
+							if arg in rebalance_arg_values:
+								if has_opt:
+									rebalance_opts += '--%s %s ' % (arg, rebalance_arg_values[arg])
+									tracedir_opts += '-%s%s' % (arg, rebalance_arg_values[arg])
+								else:
+									rebalance_opts += '--%s '
+									tracedir_opts += '-%s'
+						if policy == 'local':
 							if not local_period is None:
-								opts += '-%d' % local_period
+								tracedir_opts += '-%d' % local_period
 
 						# Clean DLB
 						do_cmd('mpirun -np %d dlb_shm -d' % num_nodes)
