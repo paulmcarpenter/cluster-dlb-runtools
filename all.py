@@ -211,7 +211,6 @@ splits = { (2,1) : '0;1',
 def find_paraver_file():
 	files = os.listdir('.')
 	for f in files:
-		print f
 		m = re.match('^(.*)\.prv', f)
 		if m:
 			return m.group(1)
@@ -320,13 +319,15 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 	return 0
 
 # Options to rebalance.py that are forwarded. The order matters for packing arguments
-rebalance_forwarded_opts = [ ('wait', True, 'w'),   # Option name and whether it takes an argument
-							 ('monitor', True, 'm'),
-							 ('no-fill', False, 'no-fill'),
-							 ('equal', False, 'equal'),
-							 ('min-master', True, 'M'),
-							 ('min-slave', True, 'S'),
-							 ('loads', True, 'L') ]
+#                             Option        has    Short 
+#                                           arg    (for trace)    
+rebalance_forwarded_opts = [ ('wait',       True,  'w',  ),
+							 ('monitor',    True,  'm'),
+							 ('no-fill',    False, 'no-fill'),
+							 ('equal',      False, 'equal'),
+							 ('min-master', True,  'M'),
+							 ('min-slave',  True,  'S'),
+							 ('loads',      True,  'L') ]
 
 def Usage():
 	print '.all.py <options>  <num_nodes> <cmd> <args...>'
@@ -445,17 +446,20 @@ def main(argv):
 						# Tracedir and rebalance options
 						rebalance_opts = ''
 						tracedir_opts = ''
-						for (arg,has_opt,shortname) in rebalance_forwarded_opts:
-							if arg in rebalance_arg_values:
-								if has_opt:
-									rebalance_opts += '--%s %s ' % (arg, rebalance_arg_values[arg])
-									tracedir_opts += '-%s%s' % (arg, rebalance_arg_values[arg])
-								else:
-									rebalance_opts += '--%s '
-									tracedir_opts += '-%s'
 						if policy == 'local':
 							if not local_period is None:
+								# Relevant for local
 								tracedir_opts += '-%d' % local_period
+						else:
+							# Relevant for global
+							for (arg,has_opt,shortname) in rebalance_forwarded_opts:
+								if arg in rebalance_arg_values:
+									if has_opt:
+										rebalance_opts += '--%s %s ' % (arg, rebalance_arg_values[arg])
+										tracedir_opts += '-%s%s' % (arg, rebalance_arg_values[arg])
+									else:
+										rebalance_opts += '--%s '
+										tracedir_opts += '-%s'
 
 						# Clean DLB
 						do_cmd('mpirun -np %d dlb_shm -d' % num_nodes)
