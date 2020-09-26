@@ -13,6 +13,7 @@ extrae = False
 continue_after_error = False
 trace_location = '/gpfs/scratch/bsc28/bsc28600/work/20200903_nanos6-cluster/traces'
 local_period = None
+extrae_preload = False
 
 rebalance_opts = None
 tracedir_opts = None
@@ -272,7 +273,7 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 	s += 'NANOS6_CLUSTER_HYBRID_POLICY="%s" ' % hybrid_policy
 	s += 'MV2_ENABLE_AFFINITY=0 '
 	if extrae:
-	 	s = s + 'NANOS6=extrae-debug '
+	 	s = s + 'NANOS6=extrae-debug EXTRAE_ON=1 '
 	if extrae_as_threads:
 		s = s + 'NANOS6_EXTRAE_AS_THREADS=1 '
 	else:
@@ -355,6 +356,8 @@ def main(argv):
 	global local_period
 	global rebalance_opts
 	global tracedir_opts
+	global extrae_preload
+	global extrae_preload_file
 	os.environ['NANOS6_ENABLE_DLB'] = '1'
 	policies = []
 	threads = []
@@ -368,7 +371,7 @@ def main(argv):
 		opts, args = getopt.getopt( argv[1:],
 									'h', ['help', 'min-per-node=',
 									      'max-per-node=', 'local',
-										  'global', 'extrae', 'extrae-as-threads',
+										  'global', 'extrae', 'extrae-preload', 'extrae-as-threads',
 										  'no-extrae-as-threads', 'no-rebalance',
 										  'continue-after-error', 'no-dlb',
 										  'local-period='] + rebalance_getopt )
@@ -394,6 +397,8 @@ def main(argv):
 			policies.append('no-rebalance')
 		elif o == '--extrae':
 			extrae = True
+		elif o == '--extrae-preload':
+			extrae_preload = True
 		elif o == '--extrae-as-threads':
 			if not True in threads:
 				threads.append(True)
@@ -429,10 +434,23 @@ def main(argv):
 	if policies == []:
 		policies = ['global', 'local']
 
-	
 	assert len(args) >= 2
 	num_nodes = int(args[0])
 	cmd = ' '.join(args[1:])
+
+	if extrae_preload and extrae:
+		if not 'EXTRAE_HOME' in os.environ:
+			print 'EXTRAE_HOME needs to be set to use --extrae-preload'
+			return 1
+		cmd2 = translate(cmd, {' ': '_', '/' : '_'})
+		extrae_preload_sh = 'preload-%s-%d' % (cmd2, os.getpid())
+		fp = open(extrae_preload_sh, 'w')
+		extrae_library = '%s/lib/libnanosmpitrace.so' % os.environ['EXTRAE_HOME']
+		print >> fp, 'LD_PRELOAD=%s %s' % (extrae_library, cmd)
+		fp.close()
+		do_cmd('cat ' + extrae_preload_sh)
+		cmd = 'sh ' + extrae_preload_sh
+	
 
 	do_cmd('pwd')
 
@@ -472,6 +490,8 @@ def main(argv):
 						while os.path.exists('.kill'):
 							time.sleep(1)
 
+	if extrae_preload and extrae:
+		do_cmd('rm ' + extrae_preload_sh)
 	return 0
 
 if __name__ == '__main__':
