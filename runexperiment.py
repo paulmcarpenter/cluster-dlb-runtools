@@ -3,6 +3,8 @@ import os
 import re
 import time
 
+global tracedir_opts
+
 # Options to rebalance.py that should be forwarded. The order matters for packing arguments
 #                             Option        has    Short 
 #                                           arg    (for trace)    
@@ -20,9 +22,7 @@ params = {'use_dlb' : True,
           'local_period' : None,
           'extrae_preload' : False,
 		  'policy' : None,
-		  'extrae_as_threads' : True,
-		  'rebalance_opts' : None,
-		  'tracedir_opts' : None}
+		  'extrae_as_threads' : True}
 
 def set_param(name, value):
 	assert name in params.keys()
@@ -51,12 +51,12 @@ def translate(string, d):
 def tracedir_name(desc, cmd, policy):
 	cmd2 = translate(cmd, {' ': '_', '/' : '_'})
 	desc2 = translate(desc, {';': '_'})
-	tracedir_opts = params['tracedir_opts']
+	global tracedir_opts
 
 	return 'trace-%s-%s-%s%s-%s' % (cmd2, desc2, policy, tracedir_opts, str(os.getpid()))
 
 
-def init(cmd):
+def init(cmd, rebalance_arg_values):
 
 	if params['use_dlb']:
 		os.environ['NANOS6_ENABLE_DLB'] = '1'
@@ -76,6 +76,7 @@ def init(cmd):
 		do_cmd('cat ' + extrae_preload_sh)
 		cmd = 'sh ' + extrae_preload_sh
 	params['cmd'] = cmd
+	params['rebalance_arg_values'] = rebalance_arg_values
 
 
 def shutdown():
@@ -84,9 +85,36 @@ def shutdown():
 
 
 def run_experiment(nodes, deg, desc):
+	global tracedir_opts
 	cmd = params['cmd']
 	policy = params['policy']
 	extrae_as_threads = params['extrae_as_threads']
+
+
+	# Tracedir and rebalance options
+	rebalance_opts = ''
+	tracedir_opts = ''
+	if policy == 'local':
+		if not params['local_period'] is None:
+			# Relevant for local
+			tracedir_opts += '-%d' % params['local_period']
+	else:
+		# Relevant for global
+		rebalance_arg_values = params['rebalance_arg_values']
+		for (arg,has_opt,shortname) in rebalance_forwarded_opts:
+			if arg in rebalance_arg_values:
+				if has_opt:
+					rebalance_opts += '--%s %s ' % (arg, rebalance_arg_values[arg])
+					tracedir_opts += '-%s%s' % (arg, rebalance_arg_values[arg])
+				else:
+					rebalance_opts += '--%s '
+					tracedir_opts += '-%s'
+
+	# Clean DLB
+	if params['use_dlb']:
+		do_cmd('mpirun -np %d dlb_shm -d' % nodes)
+
+
 	
 	if policy == 'global':
 		hybrid_policy = 'global'
@@ -108,7 +136,6 @@ def run_experiment(nodes, deg, desc):
 		do_cmd('rm -rf .hybrid')
 
 		rebalance_filename = 'rebalance-out-%d-%d.txt' % (nodes,deg)
-		rebalance_opts = params['rebalance_opts']
 		do_cmd('${MERCURIUM}/../rebalance/rebalance.py ' + rebalance_opts + '10000 > ' + rebalance_filename + ' &')
 		time.sleep(1)
 

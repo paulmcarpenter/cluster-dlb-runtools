@@ -29,11 +29,9 @@ def Usage():
 # Run experiments
 def main(argv):
 
-	global min_per_node
-	global max_per_node
-	global continue_after_error
-	global extrae_preload_file
-	os.environ['NANOS6_ENABLE_DLB'] = '1'
+	min_per_node = 1
+	max_per_node = 3
+	continue_after_error = False
 	policies = []
 	threads = []
 
@@ -61,7 +59,6 @@ def main(argv):
 		elif o == '--min-per-node':
 			min_per_node = int(a)
 		elif o == '--max-per-node':
-			print 'max-per-node done'
 			max_per_node = int(a)
 		elif o == '--local':
 			if not 'local' in policies:
@@ -91,7 +88,6 @@ def main(argv):
 			continue_after_error = True
 		elif o == '--no-dlb':
 			runexperiment.params['use_dlb'] = False
-			os.environ['NANOS6_ENABLE_DLB'] = '0'
 		elif o == '--local-period':
 			runexperiment.set_param('local_period', int(a))
 		else:
@@ -116,7 +112,7 @@ def main(argv):
 	assert len(args) >= 2
 	num_nodes = int(args[0])
 
-	runexperiment.init(' '.join(args[1:]))
+	runexperiment.init(' '.join(args[1:]), rebalance_arg_values)
 	
 	runexperiment.do_cmd('pwd')
 
@@ -129,28 +125,6 @@ def main(argv):
 					for extrae_as_threads in threads:
 						runexperiment.set_param('extrae_as_threads', extrae_as_threads)
 
-						# Tracedir and rebalance options
-						rebalance_opts = ''
-						tracedir_opts = ''
-						if policy == 'local':
-							if not runexperiment.params['local_period'] is None:
-								# Relevant for local
-								tracedir_opts += '-%d' % runexperiment.params['local_period']
-						else:
-							# Relevant for global
-							for (arg,has_opt,shortname) in runexperiment.rebalance_forwarded_opts:
-								if arg in rebalance_arg_values:
-									if has_opt:
-										rebalance_opts += '--%s %s ' % (arg, rebalance_arg_values[arg])
-										tracedir_opts += '-%s%s' % (arg, rebalance_arg_values[arg])
-									else:
-										rebalance_opts += '--%s '
-										tracedir_opts += '-%s'
-						runexperiment.set_param('rebalance_opts', rebalance_opts)
-						runexperiment.set_param('tracedir_opts', tracedir_opts)
-
-						# Clean DLB
-						runexperiment.do_cmd('mpirun -np %d dlb_shm -d' % num_nodes)
 
 						retval = runexperiment.run_experiment(nodes, deg, desc)
 						if retval != 0 and (not continue_after_error):
