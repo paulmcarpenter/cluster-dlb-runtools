@@ -7,18 +7,7 @@ import getopt
 import re
 
 import topologies
-
-use_dlb = True
-min_per_node = 0
-max_per_node = 1000
-instrumentation = None
-continue_after_error = False
-trace_location = '/gpfs/scratch/bsc28/bsc28600/work/20200903_nanos6-cluster/traces'
-local_period = None
-extrae_preload = False
-
-rebalance_opts = None
-tracedir_opts = None
+import runexperiment
 
 
 
@@ -46,25 +35,24 @@ def translate(string, d):
 def tracedir_name(desc, cmd, policy):
 	cmd2 = translate(cmd, {' ': '_', '/' : '_'})
 	desc2 = translate(desc, {';': '_'})
-	global tracedir_opts
+	tracedir_opts = runexperiment.params['tracedir_opts']
 
 	return 'trace-%s-%s-%s%s-%s' % (cmd2, desc2, policy, tracedir_opts, str(os.getpid()))
 
-def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=None):
-	global instrumentation
-	global rebalance_opts
+def run_experiment(nodes, deg, desc, cmd):
+	policy = runexperiment.params['policy']
+	extrae_as_threads = runexperiment.params['extrae_as_threads']
 	
-	if rebalance is None:
-		if policy == 'global':
-			hybrid_policy = 'global'
-			rebalance = True
-		elif policy == 'local':
-			hybrid_policy = 'local'
-			rebalance = False
-		else:
-			assert policy =='no-rebalance'
-			hybrid_policy = 'global' # Global policy
-			rebalance = False # but don't actually rebalance
+	if policy == 'global':
+		hybrid_policy = 'global'
+		rebalance = True
+	elif policy == 'local':
+		hybrid_policy = 'local'
+		rebalance = False
+	else:
+		assert policy =='no-rebalance'
+		hybrid_policy = 'global' # Global policy
+		rebalance = False # but don't actually rebalance
 
 	print 'Experiment', 'nodes:', nodes, 'deg:', deg, 'desc:', desc, 'cmd:', cmd, policy, 'rebalance:', rebalance
 
@@ -75,10 +63,11 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 		do_cmd('rm -rf .hybrid')
 
 		rebalance_filename = 'rebalance-out-%d-%d.txt' % (nodes,deg)
+		rebalance_opts = runexperiment.params['rebalance_opts']
 		do_cmd('${MERCURIUM}/../rebalance/rebalance.py ' + rebalance_opts + '10000 > ' + rebalance_filename + ' &')
 		time.sleep(1)
 
-	if instrumentation == 'extrae':
+	if runexperiment.params['instrumentation'] == 'extrae':
 		do_cmd('rm -rf set-0/ TRACE.mpits')
 
 	# Run experiment
@@ -86,9 +75,9 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 	s += 'NANOS6_CLUSTER_HYBRID_POLICY="%s" ' % hybrid_policy
 	s += 'MV2_ENABLE_AFFINITY=0 '
 
-	if not instrumentation is None:
-		s = s + 'NANOS6=%s-debug ' % instrumentation
-	if instrumentation == 'extrae' and extrae_preload:
+	if not runexperiment.params['instrumentation'] is None:
+		s = s + 'NANOS6=%s-debug ' % runexperiment.params['instrumentation']
+	if runexperiment.params['instrumentation']== 'extrae' and runexperiment.params['extrae_preload']:
 	 	s = s + 'EXTRAE_ON=1 '
 
 	if extrae_as_threads:
@@ -96,8 +85,8 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 	else:
 		if 'NANOS6_EXTRAE_AS_THREADS' in os.environ.keys():
 			del os.environ['NANOS6_EXTRAE_AS_THREADS']
-	if local_period is not None:
-		s = s + 'NANOS6_LOCAL_TIME_PERIOD=%d ' % local_period
+	if runexperiment.params['local_period'] is not None:
+		s = s + 'NANOS6_LOCAL_TIME_PERIOD=%d ' % runexperiment.params['local_period']
 	else:
 		if 'NANOS6_LOCAL_TIME_PERIOD' in os.environ.keys():
 			del os.environ['NANOS6_LOCAL_TIME_PERIOD']
@@ -109,7 +98,7 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 
 	if rebalance:
 		do_cmd('touch .kill')
-	if instrumentation == 'extrae':
+	if runexperiment.params['instrumentation'] == 'extrae':
 		# Hack to generate TRACE.mpits file
 		prefix = ''
 		if os.path.exists('create_paraver_trace.py'):
@@ -122,7 +111,7 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 
 		# Now move traces to a subdirectory
 		tracefname = tracedir_name(desc, cmd, policy)
-		tracedir = trace_location + '/' + tracefname
+		tracedir = runexperiment.params['trace_location'] + '/' + tracefname
 		prvroot = find_paraver_file()
 		do_cmd('rm -rf ' + tracedir)
 		do_cmd('mkdir -p ' + tracedir)
@@ -168,13 +157,7 @@ def main(argv):
 
 	global min_per_node
 	global max_per_node
-	global instrumentation
 	global continue_after_error
-	global use_dlb
-	global local_period
-	global rebalance_opts
-	global tracedir_opts
-	global extrae_preload
 	global extrae_preload_file
 	os.environ['NANOS6_ENABLE_DLB'] = '1'
 	policies = []
@@ -204,6 +187,7 @@ def main(argv):
 		elif o == '--min-per-node':
 			min_per_node = int(a)
 		elif o == '--max-per-node':
+			print 'max-per-node done'
 			max_per_node = int(a)
 		elif o == '--local':
 			if not 'local' in policies:
@@ -214,13 +198,13 @@ def main(argv):
 		elif o == '--no-rebalance':
 			policies.append('no-rebalance')
 		elif o == '--extrae':
-			assert instrumentation is None
-			instrumentation = 'extrae'
+			assert runexperiment.params['instrumentation'] is None
+			runexperiment.set_param('instrumentation', 'extrae')
 		elif o == '--verbose':
-			assert instrumentation is None
-			instrumentation = 'verbose'
+			assert runexperiment.params['instrumentation'] is None
+			runexperiment.set_param('instrumentation', 'verbose')
 		elif o == '--extrae-preload':
-			extrae_preload = True
+			runexperiment.set_param('extrae_preload', True)
 		elif o == '--extrae-as-threads':
 			if not True in threads:
 				threads.append(True)
@@ -232,13 +216,13 @@ def main(argv):
 		elif o == '--continue-after-error':
 			continue_after_error = True
 		elif o == '--no-dlb':
-			use_dlb = False
+			runexperiment.params['use_dlb'] = False
 			os.environ['NANOS6_ENABLE_DLB'] = '0'
 		elif o == '--local-period':
-			local_period = int(a)
+			runexperiment.set_param('local_period', int(a))
 		else:
-			print o
 			try:
+				print '>%s<' % o
 				options = ['--' + name for (name, has_arg, shortname) in rebalance_forwarded_opts]
 				index = options.index(o)
 				name, has_arg, shortname = rebalance_forwarded_opts[index]
@@ -247,8 +231,8 @@ def main(argv):
 				else:
 					rebalance_arg_values[name] = True
 
-				print 'forwarded', o
-			except ValueError: assert False # Should not get here as getopt already checked options were valid
+			except ValueError:
+				assert False # Should not get here as getopt already checked options were valid
 
 	# Default
 	if threads == []:
@@ -260,7 +244,7 @@ def main(argv):
 	num_nodes = int(args[0])
 	cmd = ' '.join(args[1:])
 
-	if extrae_preload and instrumentation == 'extrae':
+	if runexperiment.params['extrae_preload'] and runexperiment.params['instrumentation'] == 'extrae':
 		if not 'EXTRAE_HOME' in os.environ:
 			print 'EXTRAE_HOME needs to be set to use --extrae-preload'
 			return 1
@@ -281,15 +265,17 @@ def main(argv):
 			if deg >= min_per_node and deg <= max_per_node:
 
 				for policy in policies:
+					runexperiment.set_param('policy', policy)
 					for extrae_as_threads in threads:
+						runexperiment.set_param('extrae_as_threads', extrae_as_threads)
 
 						# Tracedir and rebalance options
 						rebalance_opts = ''
 						tracedir_opts = ''
 						if policy == 'local':
-							if not local_period is None:
+							if not runexperiment.params['local_period'] is None:
 								# Relevant for local
-								tracedir_opts += '-%d' % local_period
+								tracedir_opts += '-%d' % runexperiment.params['local_period']
 						else:
 							# Relevant for global
 							for (arg,has_opt,shortname) in rebalance_forwarded_opts:
@@ -300,11 +286,13 @@ def main(argv):
 									else:
 										rebalance_opts += '--%s '
 										tracedir_opts += '-%s'
+						runexperiment.set_param('rebalance_opts', rebalance_opts)
+						runexperiment.set_param('tracedir_opts', tracedir_opts)
 
 						# Clean DLB
 						do_cmd('mpirun -np %d dlb_shm -d' % num_nodes)
 
-						retval = run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads)
+						retval = run_experiment(nodes, deg, desc, cmd)
 						if retval != 0 and (not continue_after_error):
 							return 1
 
@@ -312,7 +300,7 @@ def main(argv):
 						while os.path.exists('.kill'):
 							time.sleep(1)
 
-	if extrae_preload and instrumentation == 'extrae':
+	if runexperiment.params['extrae_preload'] and runexperiment.params['instrumentation'] == 'extrae':
 		do_cmd('rm ' + extrae_preload_sh)
 	return 0
 
