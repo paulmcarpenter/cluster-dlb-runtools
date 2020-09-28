@@ -9,7 +9,7 @@ import re
 use_dlb = True
 min_per_node = 0
 max_per_node = 1000
-extrae = False
+instrumentation = None
 continue_after_error = False
 trace_location = '/gpfs/scratch/bsc28/bsc28600/work/20200903_nanos6-cluster/traces'
 local_period = None
@@ -238,7 +238,7 @@ def tracedir_name(desc, cmd, policy):
 	return 'trace-%s-%s-%s%s-%s' % (cmd2, desc2, policy, tracedir_opts, str(os.getpid()))
 
 def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=None):
-	global extrae
+	global instrumentation
 	global rebalance_opts
 	
 	if rebalance is None:
@@ -265,15 +265,19 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 		do_cmd('${MERCURIUM}/../rebalance/rebalance.py ' + rebalance_opts + '10000 > ' + rebalance_filename + ' &')
 		time.sleep(1)
 
-	if extrae:
+	if instrumentation == 'extrae':
 		do_cmd('rm -rf set-0/ TRACE.mpits')
 
 	# Run experiment
 	s = 'NANOS6_CLUSTER_SPLIT="%s" ' % desc
 	s += 'NANOS6_CLUSTER_HYBRID_POLICY="%s" ' % hybrid_policy
 	s += 'MV2_ENABLE_AFFINITY=0 '
-	if extrae:
-	 	s = s + 'NANOS6=extrae-debug EXTRAE_ON=1 '
+
+	if not instrumentation is None:
+		s = s + 'NANOS6=%s-debug ' % instrumentation
+	if instrumentation == 'extrae' and extrae_preload:
+	 	s = s + 'EXTRAE_ON=1 '
+
 	if extrae_as_threads:
 		s = s + 'NANOS6_EXTRAE_AS_THREADS=1 '
 	else:
@@ -292,7 +296,7 @@ def run_experiment(nodes, deg, desc, cmd, policy, extrae_as_threads, rebalance=N
 
 	if rebalance:
 		do_cmd('touch .kill')
-	if extrae:
+	if instrumentation == 'extrae':
 		# Hack to generate TRACE.mpits file
 		prefix = ''
 		if os.path.exists('create_paraver_trace.py'):
@@ -338,6 +342,7 @@ def Usage():
 	print ' --max-per-node d        Maximum degree'
 	print ' --local-period          NANOS6_LOCAL_TIME_PERIOD for local policy'
 	print ' --extrae                Generate extrae trace'
+	print ' --verbose               Generate verbose trace'
 	print ' --extrae-as-threads     Set NANOS6_EXTRAE_AS_THREADS=1 (default)'
 	print ' --no-extrae-as-threads  Unset NANOS6_EXTRAE_AS_THREADS'
 	print 'Options forwarded to rebalance.py:'
@@ -350,7 +355,7 @@ def main(argv):
 
 	global min_per_node
 	global max_per_node
-	global extrae
+	global instrumentation
 	global continue_after_error
 	global use_dlb
 	global local_period
@@ -371,7 +376,7 @@ def main(argv):
 		opts, args = getopt.getopt( argv[1:],
 									'h', ['help', 'min-per-node=',
 									      'max-per-node=', 'local',
-										  'global', 'extrae', 'extrae-preload', 'extrae-as-threads',
+										  'global', 'extrae', 'verbose', 'extrae-preload', 'extrae-as-threads',
 										  'no-extrae-as-threads', 'no-rebalance',
 										  'continue-after-error', 'no-dlb',
 										  'local-period='] + rebalance_getopt )
@@ -396,7 +401,11 @@ def main(argv):
 		elif o == '--no-rebalance':
 			policies.append('no-rebalance')
 		elif o == '--extrae':
-			extrae = True
+			assert instrumentation is None
+			instrumentation = 'extrae'
+		elif o == '--verbose':
+			assert instrumentation is None
+			instrumentation = 'verbose'
 		elif o == '--extrae-preload':
 			extrae_preload = True
 		elif o == '--extrae-as-threads':
@@ -438,7 +447,7 @@ def main(argv):
 	num_nodes = int(args[0])
 	cmd = ' '.join(args[1:])
 
-	if extrae_preload and extrae:
+	if extrae_preload and instrumentation == 'extrae':
 		if not 'EXTRAE_HOME' in os.environ:
 			print 'EXTRAE_HOME needs to be set to use --extrae-preload'
 			return 1
@@ -490,7 +499,7 @@ def main(argv):
 						while os.path.exists('.kill'):
 							time.sleep(1)
 
-	if extrae_preload and extrae:
+	if extrae_preload and instrumentation == 'extrae':
 		do_cmd('rm ' + extrae_preload_sh)
 	return 0
 
