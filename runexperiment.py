@@ -3,6 +3,17 @@ import os
 import re
 import time
 
+# Options to rebalance.py that should be forwarded. The order matters for packing arguments
+#                             Option        has    Short 
+#                                           arg    (for trace)    
+rebalance_forwarded_opts = [ ('wait',       True,  'w',  ),
+							 ('monitor',    True,  'm'),
+							 ('no-fill',    False, 'no-fill'),
+							 ('equal',      False, 'equal'),
+							 ('min-master', True,  'M'),
+							 ('min-slave',  True,  'S'),
+							 ('loads',      True,  'L') ]
+
 params = {'use_dlb' : True,
           'instrumentation' : None,
           'trace_location' : '/gpfs/scratch/bsc28/bsc28600/work/20200903_nanos6-cluster/traces',

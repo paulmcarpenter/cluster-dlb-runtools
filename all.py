@@ -10,17 +10,6 @@ import topologies
 import runexperiment
 
 
-# Options to rebalance.py that are forwarded. The order matters for packing arguments
-#                             Option        has    Short 
-#                                           arg    (for trace)    
-rebalance_forwarded_opts = [ ('wait',       True,  'w',  ),
-							 ('monitor',    True,  'm'),
-							 ('no-fill',    False, 'no-fill'),
-							 ('equal',      False, 'equal'),
-							 ('min-master', True,  'M'),
-							 ('min-slave',  True,  'S'),
-							 ('loads',      True,  'L') ]
-
 def Usage():
 	print '.all.py <options>  <num_nodes> <cmd> <args...>'
 	print 'where:'
@@ -33,7 +22,7 @@ def Usage():
 	print ' --extrae-as-threads     Set NANOS6_EXTRAE_AS_THREADS=1 (default)'
 	print ' --no-extrae-as-threads  Unset NANOS6_EXTRAE_AS_THREADS'
 	print 'Options forwarded to rebalance.py:'
-	print '\n'.join([' --%s' % name for (name,has_arg,shortname) in rebalance_forwarded_opts])
+	print '\n'.join([' --%s' % name for (name,has_arg,shortname) in runexperiment.rebalance_forwarded_opts])
 	return 1
 
 
@@ -51,7 +40,7 @@ def main(argv):
 	rebalance_arg_values = {}
 
 	try:
-		rebalance_getopt = [ name + ('=' if has_arg else '') for (name, has_arg, value) in rebalance_forwarded_opts ]
+		rebalance_getopt = [ name + ('=' if has_arg else '') for (name, has_arg, value) in runexperiment.rebalance_forwarded_opts ]
 		print rebalance_getopt
 
 		opts, args = getopt.getopt( argv[1:],
@@ -107,9 +96,9 @@ def main(argv):
 			runexperiment.set_param('local_period', int(a))
 		else:
 			try:
-				options = ['--' + name for (name, has_arg, shortname) in rebalance_forwarded_opts]
+				options = ['--' + name for (name, has_arg, shortname) in runexperiment.rebalance_forwarded_opts]
 				index = options.index(o)
-				name, has_arg, shortname = rebalance_forwarded_opts[index]
+				name, has_arg, shortname = runexperiment.rebalance_forwarded_opts[index]
 				if has_arg:
 					rebalance_arg_values[name] = a
 				else:
@@ -149,7 +138,7 @@ def main(argv):
 								tracedir_opts += '-%d' % runexperiment.params['local_period']
 						else:
 							# Relevant for global
-							for (arg,has_opt,shortname) in rebalance_forwarded_opts:
+							for (arg,has_opt,shortname) in runexperiment.rebalance_forwarded_opts:
 								if arg in rebalance_arg_values:
 									if has_opt:
 										rebalance_opts += '--%s %s ' % (arg, rebalance_arg_values[arg])
