@@ -57,6 +57,12 @@ def tracedir_name(desc, cmd, policy):
 
 
 def init(cmd):
+
+	if params['use_dlb']:
+		os.environ['NANOS6_ENABLE_DLB'] = '1'
+	else:
+		os.environ['NANOS6_ENABLE_DLB'] = '0'
+
 	if params['extrae_preload'] and params['instrumentation'] == 'extrae':
 		if not 'EXTRAE_HOME' in os.environ:
 			print 'EXTRAE_HOME needs to be set to use --extrae-preload'
