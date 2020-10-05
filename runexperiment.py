@@ -21,8 +21,10 @@ params = {'use_dlb' : True,
           'trace_location' : '/gpfs/scratch/bsc28/bsc28600/work/20200903_nanos6-cluster/traces',
           'local_period' : None,
           'extrae_preload' : False,
-		  'policy' : None,
-		  'extrae_as_threads' : True}
+	  'policy' : None,
+	  'extrae_as_threads' : True,
+	  'trace_suffix' : ''}
+
 
 def set_param(name, value):
 	assert name in params.keys()
@@ -51,9 +53,12 @@ def translate(string, d):
 def tracedir_name(desc, cmd, policy):
 	cmd2 = translate(cmd, {' ': '_', '/' : '_'})
 	desc2 = translate(desc, {';': '_'})
+        trace_suffix = params['trace_suffix']
+        if len(trace_suffix) >= 1 and trace_suffix[0] != '-':
+            trace_suffix = '-' + trace_suffix
 	global tracedir_opts
 
-	return 'trace-%s-%s-%s%s-%s' % (cmd2, desc2, policy, tracedir_opts, str(os.getpid()))
+	return 'trace-%s-%s-%s%s%s-%s' % (cmd2, desc2, policy, tracedir_opts, trace_suffix, str(os.getpid()))
 
 
 def init(cmd, rebalance_arg_values):
