@@ -33,6 +33,7 @@ def main(argv):
 
 	min_degree = 1
 	max_degree = 3
+	masters_per_node = 1
 	continue_after_error = False
 	policies = []
 	threads = []
@@ -45,8 +46,8 @@ def main(argv):
 
 		opts, args = getopt.getopt( argv[1:],
 									'h', ['help', 'min-per-node=',
-									      'max-per-node=', 'min-degree=', 'max-degree', 'local',
-										  'global', 'extrae', 'verbose', 'extrae-preload', 'extrae-as-threads',
+									      'max-per-node=', 'min-degree=', 'max-degree=', 'masters-per-node=',
+										  'local', 'global', 'extrae', 'verbose', 'extrae-preload', 'extrae-as-threads',
 										  'no-extrae-as-threads', 'no-rebalance',
 										  'continue-after-error', 'no-dlb',
 										  'local-period=', 'trace-suffix=', 'nanos6='] + rebalance_getopt)
@@ -65,6 +66,8 @@ def main(argv):
 			min_degree = int(a)
 		elif o == '--max-degree':
 			max_degree = int(a)
+		elif o == '--masters-per-node':
+			masters_per_node = int(a)
 		elif o == '--local':
 			if not 'local' in policies:
 				policies.append('local')
@@ -119,29 +122,30 @@ def main(argv):
 		policies = ['global', 'local']
 
 	assert len(args) >= 2
-	num_nodes = int(args[0])
+	nodes = int(args[0])
 
 	runexperiment.init(' '.join(args[1:]), rebalance_arg_values)
 	
 	runexperiment.do_cmd('pwd')
 
-	for (nodes,deg), desc in sorted(topologies.splits.items()):
-		if nodes == num_nodes:
-			if deg >= min_degree and deg <= max_degree:
+	for deg in range(min_degree, max_degree+1):
+		desc = topologies.get_topology(nodes, deg, masters_per_node)
+		if desc is None:
+			continue
 
-				for policy in policies:
-					runexperiment.set_param('policy', policy)
-					for extrae_as_threads in threads:
-						runexperiment.set_param('extrae_as_threads', extrae_as_threads)
+		for policy in policies:
+			runexperiment.set_param('policy', policy)
+			for extrae_as_threads in threads:
+				runexperiment.set_param('extrae_as_threads', extrae_as_threads)
 
 
-						retval = runexperiment.run_experiment(nodes, deg, desc)
-						if retval != 0 and (not continue_after_error):
-							return 1
+				retval = runexperiment.run_experiment(nodes, deg, masters_per_node, desc)
+				if retval != 0 and (not continue_after_error):
+					return 1
 
-						time.sleep(1)
-						while os.path.exists('.kill'):
-							time.sleep(1)
+				time.sleep(1)
+				while os.path.exists('.kill'):
+					time.sleep(1)
 
 	runexperiment.shutdown()
 	return 0
