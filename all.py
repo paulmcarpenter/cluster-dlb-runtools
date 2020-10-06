@@ -14,8 +14,8 @@ def Usage():
 	print '.all.py <options>  <num_nodes> <cmd> <args...>'
 	print 'where:'
 	print ' -h                      Show this help'
-	print ' --min-per-node d        Minimum degree'
-	print ' --max-per-node d        Maximum degree'
+	print ' --min-degree d          Minimum degree'
+	print ' --max-degree d          Maximum degree'
 	print ' --local-period          NANOS6_LOCAL_TIME_PERIOD for local policy'
 	print ' --extrae                Generate extrae trace'
 	print ' --verbose               Generate verbose trace'
@@ -31,8 +31,8 @@ def Usage():
 # Run experiments
 def main(argv):
 
-	min_per_node = 1
-	max_per_node = 3
+	min_degree = 1
+	max_degree = 3
 	continue_after_error = False
 	policies = []
 	threads = []
@@ -45,7 +45,7 @@ def main(argv):
 
 		opts, args = getopt.getopt( argv[1:],
 									'h', ['help', 'min-per-node=',
-									      'max-per-node=', 'local',
+									      'max-per-node=', 'min-degree=', 'max-degree', 'local',
 										  'global', 'extrae', 'verbose', 'extrae-preload', 'extrae-as-threads',
 										  'no-extrae-as-threads', 'no-rebalance',
 										  'continue-after-error', 'no-dlb',
@@ -58,10 +58,13 @@ def main(argv):
 	for o, a in opts:
 		if o in ('-h', '--help'):
 			return Usage()
-		elif o == '--min-per-node':
-			min_per_node = int(a)
-		elif o == '--max-per-node':
-			max_per_node = int(a)
+		elif o == '--min-per-node' or o == '--max-per-node':
+			print 'Deprecated --min-per-node and --max-per-node: use --min-degree or --max-degree'
+			return Usage()
+		elif o == '--min-degree':
+			min_degree = int(a)
+		elif o == '--max-degree':
+			max_degree = int(a)
 		elif o == '--local':
 			if not 'local' in policies:
 				policies.append('local')
@@ -124,7 +127,7 @@ def main(argv):
 
 	for (nodes,deg), desc in sorted(topologies.splits.items()):
 		if nodes == num_nodes:
-			if deg >= min_per_node and deg <= max_per_node:
+			if deg >= min_degree and deg <= max_degree:
 
 				for policy in policies:
 					runexperiment.set_param('policy', policy)
