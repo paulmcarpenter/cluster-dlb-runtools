@@ -21,9 +21,11 @@ params = {'use_dlb' : True,
           'trace_location' : '/gpfs/scratch/bsc28/bsc28600/work/20200903_nanos6-cluster/traces',
           'local_period' : None,
           'extrae_preload' : False,
-	  'policy' : None,
-	  'extrae_as_threads' : True,
-	  'trace_suffix' : ''}
+		  'policy' : None,
+		  'extrae_as_threads' : True,
+		  'trace_suffix' : '',
+          #'debug' : 'debug'}
+          'debug' : ''}
 
 
 def set_param(name, value):
@@ -152,8 +154,14 @@ def run_experiment(nodes, deg, desc):
 	s += 'NANOS6_CLUSTER_HYBRID_POLICY="%s" ' % hybrid_policy
 	s += 'MV2_ENABLE_AFFINITY=0 '
 
+	debug = params['debug']
 	if not params['instrumentation'] is None:
-		s = s + 'NANOS6=%s-debug ' % params['instrumentation']
+		if debug != '':
+			debug = '-' + debug
+		s = s + 'NANOS6=%s%s ' % (params['instrumentation'], debug)
+	else:
+		s = s + 'NANOS6=%s ' % debug
+
 	if params['instrumentation']== 'extrae' and params['extrae_preload']:
 	 	s = s + 'EXTRAE_ON=1 '
 

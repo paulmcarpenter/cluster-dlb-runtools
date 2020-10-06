@@ -21,7 +21,8 @@ def Usage():
 	print ' --verbose               Generate verbose trace'
 	print ' --extrae-as-threads     Set NANOS6_EXTRAE_AS_THREADS=1 (default)'
 	print ' --no-extrae-as-threads  Unset NANOS6_EXTRAE_AS_THREADS'
-        print ' --trace-suffix s        Suffix for trace directory and filename'
+	print ' --nanos6=               Nanos6 library'
+	print ' --trace-suffix s        Suffix for trace directory and filename'
 	print 'Options forwarded to rebalance.py:'
 	print '\n'.join([' --%s' % name for (name,has_arg,shortname) in runexperiment.rebalance_forwarded_opts])
 	return 1
@@ -48,7 +49,7 @@ def main(argv):
 										  'global', 'extrae', 'verbose', 'extrae-preload', 'extrae-as-threads',
 										  'no-extrae-as-threads', 'no-rebalance',
 										  'continue-after-error', 'no-dlb',
-										  'local-period=', 'trace-suffix='] + rebalance_getopt)
+										  'local-period=', 'trace-suffix=', 'nanos6='] + rebalance_getopt)
 
 	except getopt.error, msg:
 		print msg
@@ -91,8 +92,10 @@ def main(argv):
 			runexperiment.params['use_dlb'] = False
 		elif o == '--local-period':
 			runexperiment.set_param('local_period', int(a))
-                elif o == '--trace-suffix':
+		elif o == '--trace-suffix':
 			runexperiment.set_param('trace_suffix', a)
+		elif o == '--nanos6':
+			runexperiment.set_param('debug', a)
 		else:
 			try:
 				options = ['--' + name for (name, has_arg, shortname) in runexperiment.rebalance_forwarded_opts]
