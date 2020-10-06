@@ -143,7 +143,7 @@ def main(argv):
 
 	try:
 		opts, args = getopt.getopt( argv[1:],
-									'h', ['help', 'order-by',
+									'h', ['help', 'order-by=',
 										  'alloc', 'enabled', 'busy', 'useful-busy',
 										  'localtasks', 'totaltasks',
 										  'promised', 'immovable',
@@ -187,8 +187,9 @@ def main(argv):
 			cols.append('14')
 		elif o == '--order-by':
 			order_by = a
-			if not order_by in ['vrank', 'group']:
-				print 'Bad order-by: valid values are vrank, group'
+			if not order_by in ['node', 'vrank']:
+				print order_by
+				print 'Bad order-by: valid values are node, vrank'
 				return 1
 		else:
 			assert(False)
