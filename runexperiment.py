@@ -96,7 +96,7 @@ def shutdown():
 		do_cmd('rm ' + extrae_preload_sh)
 
 
-def run_experiment(nodes, deg, pack, desc):
+def run_experiment(nodes, deg, vranks, desc):
 	global tracedir_opts
 	cmd = params['cmd']
 	policy = params['policy']
@@ -139,7 +139,7 @@ def run_experiment(nodes, deg, pack, desc):
 		hybrid_policy = 'global' # Global policy
 		rebalance = False # but don't actually rebalance
 
-	print 'Experiment', 'vranks:', nodes*pack, 'nodes:', nodes, 'deg:', deg, 'desc:', desc, 'cmd:', cmd, policy, 'rebalance:', rebalance
+	print 'Experiment', 'vranks:', vranks, 'nodes:', nodes, 'deg:', deg, 'desc:', desc, 'cmd:', cmd, policy, 'rebalance:', rebalance
 
 	rebalance_filename = None
 	if rebalance:
@@ -157,7 +157,11 @@ def run_experiment(nodes, deg, pack, desc):
 	# Run experiment
 	s = 'NANOS6_CLUSTER_SPLIT="%s" ' % desc
 	s += 'NANOS6_CLUSTER_HYBRID_POLICY="%s" ' % hybrid_policy
-	s += 'MV2_ENABLE_AFFINITY=1 '
+
+	if params['use_dlb']:
+		s += 'MV2_ENABLE_AFFINITY=0 '
+	else:
+		s += 'MV2_ENABLE_AFFINITY=1 '
 
 	debug = params['debug']
 	if not params['instrumentation'] is None:
@@ -180,7 +184,7 @@ def run_experiment(nodes, deg, pack, desc):
 	else:
 		if 'NANOS6_LOCAL_TIME_PERIOD' in os.environ.keys():
 			del os.environ['NANOS6_LOCAL_TIME_PERIOD']
-	s += 'mpirun -np %d %s ' % (nodes*pack*deg, cmd)
+	s += 'mpirun -np %d %s ' % (vranks*deg, cmd)
 	retval = do_cmd(s)
 
 	if retval != 0:

@@ -14,6 +14,7 @@ def Usage():
 	print '.all.py <options>  <num_nodes> <cmd> <args...>'
 	print 'where:'
 	print ' -h                      Show this help'
+	print ' --vranks                Number of vranks'
 	print ' --min-degree d          Minimum degree'
 	print ' --max-degree d          Maximum degree'
 	print ' --local-period          NANOS6_LOCAL_TIME_PERIOD for local policy'
@@ -33,7 +34,7 @@ def main(argv):
 
 	min_degree = 1
 	max_degree = 3
-	masters_per_node = 1
+	vranks = None
 	continue_after_error = False
 	policies = []
 	threads = []
@@ -46,7 +47,7 @@ def main(argv):
 
 		opts, args = getopt.getopt( argv[1:],
 									'h', ['help', 'min-per-node=',
-									      'max-per-node=', 'min-degree=', 'max-degree=', 'masters-per-node=',
+									      'max-per-node=', 'min-degree=', 'max-degree=', 'vranks=',
 										  'local', 'global', 'extrae', 'verbose', 'extrae-preload', 'extrae-as-threads',
 										  'no-extrae-as-threads', 'no-rebalance',
 										  'continue-after-error', 'no-dlb',
@@ -66,8 +67,8 @@ def main(argv):
 			min_degree = int(a)
 		elif o == '--max-degree':
 			max_degree = int(a)
-		elif o == '--masters-per-node':
-			masters_per_node = int(a)
+		elif o == '--vranks':
+			vranks = int(a)
 		elif o == '--local':
 			if not 'local' in policies:
 				policies.append('local')
@@ -123,13 +124,15 @@ def main(argv):
 
 	assert len(args) >= 2
 	nodes = int(args[0])
+	if vranks is None:
+		vranks = nodes
 
 	runexperiment.init(' '.join(args[1:]), rebalance_arg_values)
 	
 	runexperiment.do_cmd('pwd')
 
 	for deg in range(min_degree, max_degree+1):
-		desc = topologies.get_topology(nodes, deg, masters_per_node)
+		desc = topologies.get_topology(nodes, deg, vranks)
 		if desc is None:
 			continue
 
@@ -139,7 +142,7 @@ def main(argv):
 				runexperiment.set_param('extrae_as_threads', extrae_as_threads)
 
 
-				retval = runexperiment.run_experiment(nodes, deg, masters_per_node, desc)
+				retval = runexperiment.run_experiment(nodes, deg, vranks, desc)
 				if retval != 0 and (not continue_after_error):
 					return 1
 

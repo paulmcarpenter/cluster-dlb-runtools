@@ -2,6 +2,7 @@ import sys
 
 splits = { (1,1) : '0',
 (2,1) : '0;1',
+(2,2) : '0,1;1,0',
 (3,1) : '0;1;2',
 (3,2) : '0,1;1,2;2,0',
 (4,1) : '0;1;2;3',
@@ -193,32 +194,78 @@ splits = { (1,1) : '0',
 
 
 def unpack_desc(desc):
-	return [ group.split(',') for group in desc.split(';')]
+	return [ [int(s) for s in group.split(',')] for group in desc.split(';')]
 
 def pack_desc(s):
-	return ';'.join([ ','.join(g) for g in s])
+	return ';'.join([ ','.join([str(n) for n in g]) for g in s])
 
-def get_topology(nodes, deg, pack):
-	# nodes:   Number of actual nodes
-	# deg:     Number of instances per virtual rank
-	# pack:    Number of masters per node
-
-	# We will just make "pack" copies of the basic graph
+def get_split(nodes, deg):
 	s = splits.get((nodes,deg))
 	if s is None:
-		return None
+		print 'Cannot get split(', nodes, ',', deg, ')'
+	return s
 
-	basic_desc = unpack_desc(s)
+def get_topology(nodes, deg, vranks):
+	# nodes:   Number of actual nodes
+	# deg:     Number of instances per virtual rank
+	# vranks:  Number of application (virtual) ranks
 
-	# Iterate over actual vrank
-	desc = []
-	for vrank in range(0, nodes*pack):
-		# Consecutive vranks use same nodes
-		my_nodes = basic_desc[vrank / pack]
-		desc.append(my_nodes)
-	
-	desc_s = pack_desc(desc)
-	return desc_s
+	if vranks >= nodes:
+		# More than one vrank per node
+		if ((vranks % nodes) != 0):
+			print 'Number of application ranks', vranks, 'is not an integer multiple of number of nodes', nodes
+			return None
+
+		pack = vranks / nodes
+		# We will just make "pack" copies of the basic graph
+		s = get_split(nodes,deg)
+		if s is None:
+			return None
+
+		basic_desc = unpack_desc(s)
+
+		# Iterate over actual vrank
+		desc = []
+		for vrank in range(0, vranks):
+			# Consecutive vranks use same nodes
+			my_nodes = basic_desc[vrank / pack]
+			desc.append(my_nodes)
+		
+		desc_s = pack_desc(desc)
+		return desc_s
+
+	else:
+		# More nodes than vranks
+		if ((nodes % vranks) != 0):
+			print 'Number of nodes', vranks, 'is not an integer multiple of application ranks', nodes
+			return None
+		expansion = nodes / vranks
+		if ((deg % expansion) != 0):
+			print 'Application degree', deg, 'is not an integer multiple of the expansion: nodes/vranks =', \
+										nodes, '/', vranks, '=', nodes/vranks
+			return None
+		s = get_split(vranks, deg/expansion)
+		if s is None:
+			return None
+		basic_desc = unpack_desc(s)
+
+		# This is in terms of "virtual ranks", need to expand up by expansion factor to include all nodes
+		# This needs improving of course
+		desc = []
+		for vrank in range(0, vranks):
+			my_vnodes = basic_desc[vrank]
+			my_nodes = []
+			for vn in my_vnodes:
+				for j in range(0,expansion):
+					my_nodes.append(vn * expansion+j)
+			desc.append(my_nodes)
+		desc_s = pack_desc(desc)
+		return desc_s
+
+
+
+
+
 
 
 
