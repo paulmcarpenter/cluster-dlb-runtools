@@ -40,7 +40,10 @@ def main(argv):
 	policies = []
 	threads = []
 
-	rebalance_arg_values = {}
+
+	# Sensible initial value
+	runexperiment.set_param('local_period', 150)
+	rebalance_arg_values = {'monitor' : 150}
 
 	try:
 		rebalance_getopt = [ name + ('=' if has_arg else '') for (name, has_arg, value) in runexperiment.rebalance_forwarded_opts ]
