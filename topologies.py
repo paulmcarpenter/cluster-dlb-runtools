@@ -206,6 +206,7 @@ def get_split(nodes, deg):
 	return s
 
 def get_topology(nodes, deg, vranks):
+	print 'get_topology', nodes, deg, vranks
 	# nodes:   Number of actual nodes
 	# deg:     Number of instances per virtual rank
 	# vranks:  Number of application (virtual) ranks
@@ -216,8 +217,8 @@ def get_topology(nodes, deg, vranks):
 			print 'Number of application ranks', vranks, 'is not an integer multiple of number of nodes', nodes
 			return None
 
-		pack = vranks / nodes
 		# We will just make "pack" copies of the basic graph
+		pack = vranks / nodes
 		s = get_split(nodes,deg)
 		if s is None:
 			return None

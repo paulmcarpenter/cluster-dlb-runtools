@@ -20,6 +20,7 @@ rebalance_forwarded_opts = [ ('wait',       True,  'w',  ),
 							 ('loads',      True,  'L') ]
 
 params = {'use_dlb' : True,
+		  'use_hybrid' : True,
           'instrumentation' : None,
           'trace_location' : '/gpfs/scratch/bsc28/bsc28600/work/20200903_nanos6-cluster/traces',
           'local_period' : None,
@@ -27,6 +28,7 @@ params = {'use_dlb' : True,
 		  'policy' : None,
 		  'extrae_as_threads' : True,
 		  'trace_suffix' : '',
+		  'oversubscribe' : True,
           #'debug' : 'debug'}
           'debug' : ''}
 
@@ -155,10 +157,12 @@ def run_experiment(nodes, deg, vranks, desc):
 		do_cmd('rm -rf set-0/ TRACE.mpits')
 
 	# Run experiment
-	s = 'NANOS6_CLUSTER_SPLIT="%s" ' % desc
-	s += 'NANOS6_CLUSTER_HYBRID_POLICY="%s" ' % hybrid_policy
+	s = ''
+	if params['use_hybrid']:
+		s += 'NANOS6_CLUSTER_SPLIT="%s" ' % desc
+		s += 'NANOS6_CLUSTER_HYBRID_POLICY="%s" ' % hybrid_policy
 
-	if params['use_dlb']:
+	if params['use_dlb'] or params['oversubscribe']:
 		s += 'MV2_ENABLE_AFFINITY=0 '
 	else:
 		s += 'MV2_ENABLE_AFFINITY=1 '

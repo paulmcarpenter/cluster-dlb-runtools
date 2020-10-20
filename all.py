@@ -14,6 +14,7 @@ def Usage():
 	print '.all.py <options>  <num_nodes> <cmd> <args...>'
 	print 'where:'
 	print ' -h                      Show this help'
+	print ' --continue-after-error  To try to find more errors'
 	print ' --vranks                Number of vranks'
 	print ' --min-degree d          Minimum degree'
 	print ' --max-degree d          Maximum degree'
@@ -43,7 +44,6 @@ def main(argv):
 
 	try:
 		rebalance_getopt = [ name + ('=' if has_arg else '') for (name, has_arg, value) in runexperiment.rebalance_forwarded_opts ]
-		print rebalance_getopt
 
 		opts, args = getopt.getopt( argv[1:],
 									'h', ['help', 'min-per-node=',
@@ -129,8 +129,6 @@ def main(argv):
 
 	runexperiment.init(' '.join(args[1:]), rebalance_arg_values)
 	
-	runexperiment.do_cmd('pwd')
-
 	for deg in range(min_degree, max_degree+1):
 		desc = topologies.get_topology(nodes, deg, vranks)
 		if desc is None:
