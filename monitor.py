@@ -6,32 +6,51 @@ import time
 import getopt
 
 use_colours = True
+if not sys.stdout.isatty():
+	use_colours = False
+
 
 def black(s):
     return s
 
 def weak_red(s):
+    if not use_colours:
+        return s
     return '\033[0;31m' + s + '\033[0;m'  if use_colours else s
 
 def red(s):
+    if not use_colours:
+        return s
     return '\033[1;31m' + s + '\033[0;m'  if use_colours else s
 
 def weak_green(s):
+    if not use_colours:
+        return s
     return '\033[0;32m' + s + '\033[0;m'  if use_colours else s
 
 def green(s):
+    if not use_colours:
+        return s
     return '\033[1;32m' + s + '\033[0;m'  if use_colours else s
 
 def weak_blue(s):
+    if not use_colours:
+        return s
     return '\033[0;34m' + s + '\033[0;m'  if use_colours else s
 
 def blue(s):
+    if not use_colours:
+        return s
     return '\033[1;34m' + s + '\033[0;m'  if use_colours else s
 
 def weak_magenta(s):
+    if not use_colours:
+        return s
     return '\033[0;35m' + s + '\033[0;m'  if use_colours else s
 
 def magenta(s):
+    if not use_colours:
+        return s
     return '\033[1;35m' + s + '\033[0;m'  if use_colours else s
 
 
