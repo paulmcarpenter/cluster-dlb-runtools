@@ -108,11 +108,11 @@ def Usage():
 
 fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'useful-busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d',
 			'promised' : '%4d', 'immovable' : '%4d', 'requests' : '%4d', 'requestacks' : '%4d', 'owned' : '%4d',
-			'lent' : '%4d', 'borrowed' : '%4d', '14' : '%4d'}
+			'lent' : '%4d', 'borrowed' : '%4d', '14' : '%4.1f', '15' : '%4.1f', '16' : '%4.1f'}
 
 fmt_no_value = {'alloc' : '%2s', 'enabled' : '%2s', 'busy' : '%4s', 'useful-busy' : '%4s', 'localtasks' : '%4s', 'totaltasks' : '%4s',
 			'promised' : '%4s', 'immovable' : '%4s', 'requests' : '%4s', 'requestacks' : '%4s', 'owned' : '%4s',
-			'lent' : '%4s', 'borrowed' : '%4s', '14' : '%4s'}
+			'lent' : '%4s', 'borrowed' : '%4s', '14' : '%4s', '15' : '%4s', '16' : '%4s'}
 
 def format_value(value, typ):
 	field = value[typ]
@@ -142,8 +142,6 @@ def format_value(value, typ):
 		return blue(formatted)
 	elif typ == 'borrowed':
 		return blue(formatted)
-	elif typ == '14':
-		return blue(formatted)
 	else:
 		return formatted
 
@@ -151,23 +149,22 @@ def no_value(typ):
 	return fmt_no_value[typ] % '#'
 
 fmt_width = {'alloc': 2, 'enabled': 2, 'busy': 5, 'useful-busy': 5, 'localtasks' : 4, 'totaltasks' : 4, 'promised' : 4, 'immovable' : 4, 
-			'requests' : 4, 'requestacks' : 4, 'owned' : 4, 'lent' : 4, 'borrowed' : 4, '14' : 4}
-
-def main(argv):
-
+			'requests' : 4, 'requestacks' : 4, 'owned' : 4, 'lent' : 4, 'borrowed' : 4, '14' : 4, '15' : 4, '16' : 4}
+def main(argv): 
 	cols = []
 	squash = True
 	print_timestamp = True
 	order_by = 'vrank'  # 'vrank' or 'node'
+	follow = False
 
 	try:
 		opts, args = getopt.getopt( argv[1:],
-									'h', ['help', 'order-by=',
+									'hf', ['help', 'order-by=',
 										  'alloc', 'enabled', 'busy', 'useful-busy',
 										  'localtasks', 'totaltasks',
 										  'promised', 'immovable',
 										  'requests', 'requestacks',
-										  'owned', 'lent', 'borrowed', '14'] )
+										  'owned', 'lent', 'borrowed', '14', '15',  '16', 'follow'] )
 
 	except getopt.error, msg:
 		print msg
@@ -176,7 +173,9 @@ def main(argv):
 	for o, a in opts:
 		if o in ('-h', '--help'):
 			return Usage()
-		if o == '--alloc':
+		elif o in ('-f', '--follow'):
+			follow = True
+		elif o == '--alloc':
 			cols.append('alloc')
 		elif o == '--enabled':
 			cols.append('enabled')
@@ -204,6 +203,10 @@ def main(argv):
 			cols.append('borrowed')
 		elif o == '--14':
 			cols.append('14')
+		elif o == '--15':
+			cols.append('15')
+		elif o == '--16':
+			cols.append('16')
 		elif o == '--order-by':
 			order_by = a
 			if not order_by in ['node', 'vrank']:
@@ -276,7 +279,8 @@ def main(argv):
 	readlogs = dict( [(extrank, ReadLog(files[extrank])) for extrank in extranks])
 
 	curr_timestamp = 0
-	while True:
+	done = False
+	while not done:
 		values = {}
 		atend = False
 		num_valid = 0
@@ -288,6 +292,9 @@ def main(argv):
 			s = None
 			while True:
 				if readlogs[extrank].timestamp() is None:
+					if not follow:
+						done = True
+						break
 					time.sleep(0.1)
 					continue
 				if readlogs[extrank].timestamp() > curr_timestamp:
@@ -314,7 +321,11 @@ def main(argv):
 				values[extrank]['lent'] = int(s[12])
 				values[extrank]['borrowed'] = int(s[13])
 				if len(s) >= 15:
-					values[extrank]['14'] = int(s[14])
+					values[extrank]['14'] = float(s[14])
+				if len(s) >= 16:
+					values[extrank]['15'] = float(s[15])
+				if len(s) >= 17:
+					values[extrank]['16'] = float(s[16])
 
 		if num_valid > 0:
 			if order_by == 'node':
