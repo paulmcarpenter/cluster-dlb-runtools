@@ -156,6 +156,7 @@ def main(argv):
 	print_timestamp = True
 	order_by = 'vrank'  # 'vrank' or 'node'
 	follow = False
+	subsample = 1
 
 	try:
 		opts, args = getopt.getopt( argv[1:],
@@ -164,7 +165,8 @@ def main(argv):
 										  'localtasks', 'totaltasks',
 										  'promised', 'immovable',
 										  'requests', 'requestacks',
-										  'owned', 'lent', 'borrowed', '14', '15',  '16', 'follow'] )
+										  'owned', 'lent', 'borrowed', '14', '15',  '16', 'follow',
+										  'subsample='] )
 
 	except getopt.error, msg:
 		print msg
@@ -207,6 +209,8 @@ def main(argv):
 			cols.append('15')
 		elif o == '--16':
 			cols.append('16')
+		elif o == '--subsample':
+			subsample = int(a)
 		elif o == '--order-by':
 			order_by = a
 			if not order_by in ['node', 'vrank']:
@@ -280,12 +284,13 @@ def main(argv):
 
 	curr_timestamp = 0
 	done = False
+	linenum = 0
 	while not done:
+		linenum += 1
 		values = {}
 		atend = False
 		num_valid = 0
-		if print_timestamp:
-			print '%5.1f' % curr_timestamp,
+
 		for extrank in extranks:
 
 			# Get current line from all
@@ -327,6 +332,14 @@ def main(argv):
 				if len(s) >= 17:
 					values[extrank]['16'] = float(s[16])
 
+		curr_timestamp += 0.5
+
+		if (linenum % subsample) != 0:
+			continue
+
+		if print_timestamp:
+			print '%5.1f' % curr_timestamp,
+
 		if num_valid > 0:
 			if order_by == 'node':
 				extranks_pr = [  [gn[(group,node)] for group in range(0,maxGroup) if (group,node) in gn] for node in range(0, numNodes) ]
@@ -350,7 +363,6 @@ def main(argv):
 				print ' | ',
 			print
 
-		curr_timestamp += 0.5
 			
 if __name__ == '__main__':
 	sys.exit(main(sys.argv))
