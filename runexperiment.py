@@ -211,13 +211,17 @@ def run_experiment(nodes, deg, vranks, desc):
 		tracefname = tracedir_name(desc, cmd, policy)
 		tracedir = params['trace_location'] + '/' + tracefname
 		prvroot = find_paraver_file()
-		do_cmd('rm -rf ' + tracedir)
-		do_cmd('mkdir -p ' + tracedir)
-		do_cmd('mv TRACE.mpits set-0 ' + tracedir)
-		do_cmd('mv ' + prvroot + '.prv ' + tracedir + '/' + tracefname + '.prv')
-		do_cmd('mv ' + prvroot + '.pcf ' + tracedir + '/' + tracefname + '.pcf')
-		do_cmd('mv ' + prvroot + '.row ' + tracedir + '/' + tracefname + '.row')
-		do_cmd('mv .hybrid/ ' + tracedir)
+		print 'prvroot:', prvroot
+		if prvroot:
+			#do_cmd('rm -rf ' + tracedir)
+			do_cmd('mkdir -p ' + tracedir)
+			do_cmd('mv TRACE.mpits ' + tracedir)
+			do_cmd('mv ' + prvroot + '.prv ' + tracedir + '/' + tracefname + '.prv')
+			do_cmd('mv ' + prvroot + '.pcf ' + tracedir + '/' + tracefname + '.pcf')
+			do_cmd('mv ' + prvroot + '.row ' + tracedir + '/' + tracefname + '.row')
+			do_cmd('mv .hybrid/ ' + tracedir)
+		do_cmd('rm -rf set-0')
+
 		if not rebalance_filename is None:
 			do_cmd('mv ' + rebalance_filename + ' ' + tracedir)
 
