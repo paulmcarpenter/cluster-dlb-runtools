@@ -65,7 +65,11 @@ def tracedir_name(desc, cmd, policy):
             trace_suffix = '-' + trace_suffix
 	global tracedir_opts
 
-	return 'trace-%s-%s-%s%s%s-%s' % (cmd2, desc2, policy, tracedir_opts, trace_suffix, str(os.getpid()))
+	prefix  = 'trace-%s-%s-%s%s%s' % (cmd2, desc2, policy, tracedir_opts, trace_suffix)
+
+	tracefname    = '%s-%s' % (prefix, str(os.getpid()))
+	tracenodename = '%s-node-%s' % (prefix, str(os.getpid()))
+	return tracefname, tracenodename
 
 
 def init(cmd, rebalance_arg_values):
@@ -208,17 +212,21 @@ def run_experiment(nodes, deg, vranks, desc):
 		do_cmd('mpi2prv -f TRACE.mpits')
 
 		# Now move traces to a subdirectory
-		tracefname = tracedir_name(desc, cmd, policy)
+		tracefname, tracenodename = tracedir_name(desc, cmd, policy)
 		tracedir = params['trace_location'] + '/' + tracefname
 		prvroot = find_paraver_file()
 		print 'prvroot:', prvroot
 		if prvroot:
 			#do_cmd('rm -rf ' + tracedir)
+			do_cmd('num_cores ' + prvroot + '.prv ' + prvroot + '-node.prv')
 			do_cmd('mkdir -p ' + tracedir)
 			do_cmd('mv TRACE.mpits ' + tracedir)
 			do_cmd('mv ' + prvroot + '.prv ' + tracedir + '/' + tracefname + '.prv')
 			do_cmd('mv ' + prvroot + '.pcf ' + tracedir + '/' + tracefname + '.pcf')
 			do_cmd('mv ' + prvroot + '.row ' + tracedir + '/' + tracefname + '.row')
+			do_cmd('mv ' + prvroot + '-node.prv ' + tracedir + '/' + tracenodename + '.prv')
+			do_cmd('mv ' + prvroot + '-node.pcf ' + tracedir + '/' + tracenodename + '.pcf')
+			do_cmd('mv ' + prvroot + '-node.row ' + tracedir + '/' + tracenodename + '.row')
 			do_cmd('mv .hybrid/ ' + tracedir)
 		do_cmd('rm -rf set-0')
 
