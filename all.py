@@ -11,24 +11,24 @@ import runexperiment
 
 
 def Usage():
-	print '.all.py <options>  <num_nodes> <cmd> <args...>'
-	print 'where:'
-	print ' -h                      Show this help'
-	print ' --vranks                Number of vranks'
-	print ' --degree d              Set degree'
-	print ' --local                 Use local policy'
-	print ' --global                Use global policy'
-	print ' --no-rebalance          No rebalance policy'
-	print ' --local-period          NANOS6_LOCAL_TIME_PERIOD for local policy'
-	print ' --extrae                Generate extrae trace'
-	print ' --verbose               Generate verbose trace'
-	print ' --extrae-as-threads     Set NANOS6_EXTRAE_AS_THREADS=1 (default)'
-	print ' --no-extrae-as-threads  Unset NANOS6_EXTRAE_AS_THREADS'
-	print ' --nanos6=               Nanos6 library'
-	print ' --trace-suffix s        Suffix for trace directory and filename'
-	print ' --continue-after-error  To try to find more errors'
-	print 'Options forwarded to rebalance.py:'
-	print '\n'.join([' --%s' % name for (name,has_arg,shortname) in runexperiment.rebalance_forwarded_opts])
+	print('.all.py <options>  <num_nodes> <cmd> <args...>')
+	print('where:')
+	print(' -h                      Show this help')
+	print(' --vranks                Number of vranks')
+	print(' --degree d              Set degree')
+	print(' --local                 Use local policy')
+	print(' --global                Use global policy')
+	print(' --no-rebalance          No rebalance policy')
+	print(' --local-period          NANOS6_LOCAL_TIME_PERIOD for local policy')
+	print(' --extrae                Generate extrae trace')
+	print(' --verbose               Generate verbose trace')
+	print(' --extrae-as-threads     Set NANOS6_EXTRAE_AS_THREADS=1 (default)')
+	print(' --no-extrae-as-threads  Unset NANOS6_EXTRAE_AS_THREADS')
+	print(' --nanos6=               Nanos6 library')
+	print(' --trace-suffix s        Suffix for trace directory and filename')
+	print(' --continue-after-error  To try to find more errors')
+	print('Options forwarded to rebalance.py:')
+	print('\n'.join([' --%s' % name for (name,has_arg,shortname) in runexperiment.rebalance_forwarded_opts]))
 	return 1
 
 
@@ -55,9 +55,9 @@ def main(argv):
 										  'continue-after-error', 'no-dlb',
 										  'local-period=', 'trace-suffix=', 'nanos6='] + rebalance_getopt)
 
-	except getopt.error, msg:
-		print msg
-		print "for help use --help"
+	except getopt.error as msg:
+		print(msg)
+		print('for help use --help')
 		sys.exit(2)
 	for o, a in opts:
 		if o in ('-h', '--help'):
@@ -68,17 +68,17 @@ def main(argv):
 			vranks = int(a)
 		elif o == '--local':
 			if not policy is None:
-				print 'Do not specify more than one policy'
+				print('Do not specify more than one policy')
 				return 1
 			policy = 'local'
 		elif o == '--global':
 			if not policy is None:
-				print 'Do not specify more than one policy'
+				print('Do not specify more than one policy')
 				return 1
 			policy = 'global'
 		elif o == '--no-rebalance':
 			if not policy is None:
-				print 'Do not specify more than one policy'
+				print('Do not specify more than one policy')
 				return 1
 			policy = 'no-rebalance'
 		elif o == '--extrae':
@@ -92,7 +92,7 @@ def main(argv):
 		elif o == '--extrae-as-threads':
 			extrae_as_threads = True
 		elif o == '--no-extrae-as-threads':
-			print '** --no-extrae-as-threads does work well'
+			print('** --no-extrae-as-threads does work well')
 			return 1
 			extrae_as_threads = False
 		elif o == '--continue-after-error':
@@ -119,7 +119,7 @@ def main(argv):
 				assert False # Should not get here as getopt already checked options were valid
 
 	if policy is None:
-		print 'Specify a policy --local, --global or --no-rebalance'
+		print('Specify a policy --local, --global or --no-rebalance')
 		return 1
 
 	assert len(args) >= 2

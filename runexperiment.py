@@ -47,7 +47,7 @@ def find_paraver_file():
 	return None
 
 def do_cmd(s):
-	print s
+	print(s)
 	sys.stdout.flush()
 	return os.system(s)
 
@@ -60,9 +60,9 @@ def translate(string, d):
 def tracedir_name(desc, cmd, policy):
 	cmd2 = translate(cmd, {' ': '_', '/' : '_'})
 	desc2 = translate(desc, {';': '_'})
-        trace_suffix = params['trace_suffix']
-        if len(trace_suffix) >= 1 and trace_suffix[0] != '-':
-            trace_suffix = '-' + trace_suffix
+	trace_suffix = params['trace_suffix']
+	if len(trace_suffix) >= 1 and trace_suffix[0] != '-':
+		trace_suffix = '-' + trace_suffix
 	global tracedir_opts
 
 	prefix  = 'trace-%s-%s-%s%s%s' % (cmd2, desc2, policy, tracedir_opts, trace_suffix)
@@ -82,13 +82,13 @@ def init(cmd, rebalance_arg_values):
 
 	if params['extrae_preload'] and params['instrumentation'] == 'extrae':
 		if not 'EXTRAE_HOME' in os.environ:
-			print 'EXTRAE_HOME needs to be set to use --extrae-preload'
+			print('EXTRAE_HOME needs to be set to use --extrae-preload')
 			return 1
 		cmd2 = translate(cmd, {' ': '_', '/' : '_'})
 		extrae_preload_sh = 'preload-%s-%d' % (cmd2, os.getpid())
 		fp = open(extrae_preload_sh, 'w')
 		extrae_library = '%s/lib/libnanosmpitrace.so' % os.environ['EXTRAE_HOME']
-		print >> fp, 'LD_PRELOAD=%s %s' % (extrae_library, cmd)
+		print('LD_PRELOAD=%s %s' % (extrae_library, cmd), file = fp)
 		fp.close()
 		do_cmd('cat ' + extrae_preload_sh)
 		cmd = 'sh ' + extrae_preload_sh
@@ -145,7 +145,7 @@ def run_experiment(nodes, deg, vranks, desc):
 		hybrid_policy = 'global' # Global policy
 		rebalance = False # but don't actually rebalance
 
-	print 'Experiment', 'vranks:', vranks, 'nodes:', nodes, 'deg:', deg, 'desc:', desc, 'cmd:', cmd, policy, 'rebalance:', rebalance
+	print('Experiment', 'vranks:', vranks, 'nodes:', nodes, 'deg:', deg, 'desc:', desc, 'cmd:', cmd, policy, 'rebalance:', rebalance)
 
 	rebalance_filename = None
 	if rebalance:
@@ -215,7 +215,7 @@ def run_experiment(nodes, deg, vranks, desc):
 		tracefname, tracenodename = tracedir_name(desc, cmd, policy)
 		tracedir = params['trace_location'] + '/' + tracefname
 		prvroot = find_paraver_file()
-		print 'prvroot:', prvroot
+		print('prvroot:', prvroot)
 		if prvroot:
 			#do_cmd('rm -rf ' + tracedir)
 			do_cmd('num_cores ' + prvroot + '.prv ' + prvroot + '-node.prv')
