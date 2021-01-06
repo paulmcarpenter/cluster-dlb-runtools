@@ -183,8 +183,8 @@ def run_experiment(nodes, deg, vranks, desc):
 	s = ''
 	runtools_dir = os.path.abspath(os.path.dirname(__file__))
 	if params['use_hybrid']:
-		add_override(nanos6_override, 'cluster.split', desc)
-		add_override(nanos6_override, 'cluster.hybrid_policy', hybrid_policy)
+		add_override(nanos6_override, 'cluster.hybrid.split', desc)
+		add_override(nanos6_override, 'cluster.hybrid.policy', hybrid_policy)
 		s = s + 'NANOS6_CONFIG=%s/nanos6-hybrid.toml ' % runtools_dir
 	else:
 		s = s + 'NANOS6_CONFIG=%s/nanos6-no-hybrid.toml ' % runtools_dir
