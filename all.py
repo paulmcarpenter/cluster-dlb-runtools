@@ -119,10 +119,12 @@ def main(argv):
 				assert False # Should not get here as getopt already checked options were valid
 
 	if policy is None:
-		print('Specify a policy --local, --global or --no-rebalance')
-		return 1
+		runexperiment.set_param('use_hybrid', False)
+	else:
+		runexperiment.set_param('use_hybrid', True)
 
-	assert len(args) >= 2
+	if len(args) < 2:
+		return Usage()
 	nodes = int(args[0])
 	if vranks is None:
 		vranks = nodes

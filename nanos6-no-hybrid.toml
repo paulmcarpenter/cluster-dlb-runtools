@@ -137,11 +137,6 @@
 	# suitable address. Default is 0x00000000
 	va_start = 0x00000000
 
-	[cluster.hybrid]
-		split = ""
-		hybrid_policy = ""
-		local_time_period = 0
-
 [memory]
 	[memory.pool]
 		# Indicate the global allocation size for the global memory pool. Considered only in

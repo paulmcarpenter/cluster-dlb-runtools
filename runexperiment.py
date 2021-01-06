@@ -153,10 +153,14 @@ def run_experiment(nodes, deg, vranks, desc):
 	elif policy == 'local':
 		hybrid_policy = 'local'
 		rebalance = False
-	else:
-		assert policy =='no-rebalance'
+	elif policy =='no-rebalance':
 		hybrid_policy = 'global' # Global policy
 		rebalance = False # but don't actually rebalance
+	else:
+		assert policy is None
+		assert not params['use_hybrid']
+		hybrid_policy = None
+		rebalance = False
 
 	print('Experiment', 'vranks:', vranks, 'nodes:', nodes, 'deg:', deg, 'desc:', desc, 'cmd:', cmd, policy, 'rebalance:', rebalance)
 
@@ -177,9 +181,13 @@ def run_experiment(nodes, deg, vranks, desc):
 	global nanos6_override_prefix
 	nanos6_override = nanos6_override_prefix
 	s = ''
+	runtools_dir = os.path.abspath(os.path.dirname(__file__))
 	if params['use_hybrid']:
 		add_override(nanos6_override, 'cluster.split', desc)
 		add_override(nanos6_override, 'cluster.hybrid_policy', hybrid_policy)
+		s = s + 'NANOS6_CONFIG=%s/nanos6-hybrid.toml ' % runtools_dir
+	else:
+		s = s + 'NANOS6_CONFIG=%s/nanos6-no-hybrid.toml ' % runtools_dir
 
 	if params['use_dlb'] or params['oversubscribe']:
 		s += 'MV2_ENABLE_AFFINITY=0 '
@@ -188,7 +196,7 @@ def run_experiment(nodes, deg, vranks, desc):
 
 	debug = params['debug']
 	assert debug == True or debug == False
-	add_override(nanos6_override, 'version.debug', debug)
+	add_override(nanos6_override, 'version.debug', 'true' if debug else 'false')
 
 	if not params['instrumentation'] is None:
 		add_override(nanos6_override, 'version.instrument', instrumentation)
@@ -202,7 +210,7 @@ def run_experiment(nodes, deg, vranks, desc):
 		add_override(nanos6_override, 'instrument.extrae.as_threads', 'true')
 	else:
 		add_override(nanos6_override, 'instrument.extrae.as_threads', 'false')
-	if params['local_period'] is not None:
+	if params['use_hybrid'] and params['local_period'] is not None:
 		add_override(nanos6_override, 'cluster.hybrid.local_time_period', params['local_period'])
 
 	s += ' NANOS6_CONFIG_OVERRIDE=\"%s\" ' % get_nanos6_override(nanos6_override)
