@@ -90,20 +90,20 @@ class ReadLog:
 
 
 def Usage():
-	print './monitor.py <options>'
-	print 'where:'
-	print ' -h                      Show this help'
-	print ' --order-by vrank/node   Group by vrank or node'
-	print ' --alloc                 Show allocated #cores'
-	print ' --enabled               Show active owned #cores from DLB'
-	print ' --owned                 Show owned #cores from DLB'
-	print ' --lent                  Show number lent cores from DLB'
-	print ' --busy                  Show busy #cores'
-	print ' --useful-busy           Show useful busy #cores'
-	print ' --localtasks            Show local ready tasks'
-	print ' --totaltasks            Show total ready tasks in group'
-	print ' --promised              Show local num. promised tasks'
-	print ' --immovable             Show local num. immovable tasks'
+	print( './monitor.py <options>')
+	print( 'where:')
+	print( ' -h                      Show this help')
+	print( ' --order-by vrank/node   Group by vrank or node')
+	print( ' --alloc                 Show allocated #cores')
+	print( ' --enabled               Show active owned #cores from DLB')
+	print( ' --owned                 Show owned #cores from DLB')
+	print( ' --lent                  Show number lent cores from DLB')
+	print( ' --busy                  Show busy #cores')
+	print( ' --useful-busy           Show useful busy #cores')
+	print( ' --localtasks            Show local ready tasks')
+	print( ' --totaltasks            Show total ready tasks in group')
+	print( ' --promised              Show local num. promised tasks')
+	print( ' --immovable             Show local num. immovable tasks')
 	return 1
 
 fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'useful-busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d',
@@ -168,9 +168,9 @@ def main(argv):
 										  'owned', 'lent', 'borrowed', '14', '15',  '16', 'follow',
 										  'subsample='] )
 
-	except getopt.error, msg:
-		print msg
-		print "for help use --help"
+	except getopt.error as msg:
+		print(msg)
+		print("for help use --help")
 		sys.exit(2)
 	for o, a in opts:
 		if o in ('-h', '--help'):
@@ -214,8 +214,8 @@ def main(argv):
 		elif o == '--order-by':
 			order_by = a
 			if not order_by in ['node', 'vrank']:
-				print order_by
-				print 'Bad order-by: valid values are node, vrank'
+				print(order_by)
+				print('Bad order-by: valid values are node, vrank')
 				return 1
 		else:
 			assert(False)
@@ -338,7 +338,7 @@ def main(argv):
 			continue
 
 		if print_timestamp:
-			print '%5.1f' % curr_timestamp,
+			print('%5.1f ' % curr_timestamp, end='')
 
 		if num_valid > 0:
 			if order_by == 'node':
@@ -353,15 +353,15 @@ def main(argv):
 					#print '%2d %4.1f ' % (local_alloc[extrank], busy[extrank]),
 					if extrank in values:
 						for col in cols:
-							print format_value(values[extrank], col),
+							print(format_value(values[extrank], col), end=' ')
 					else:
 						for col in cols:
-							print no_value(col),
-					print '',
+							print(no_value(col), end=' ')
+					print(' ', end='')
 				else:
-					print none_fmt % '-',
-				print ' | ',
-			print
+					print(none_fmt % '-', end=' ')
+				print(' |  ', end='')
+		print()
 
 			
 if __name__ == '__main__':
