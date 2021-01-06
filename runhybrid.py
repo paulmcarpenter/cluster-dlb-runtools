@@ -27,10 +27,20 @@ def Usage():
 	print(' --nanos6=               Nanos6 library')
 	print(' --trace-suffix s        Suffix for trace directory and filename')
 	print(' --continue-after-error  To try to find more errors')
+	print(' --enable-drom val       Enable or disable DROM (val=true/false)')
+	print(' --enable-lewi val       Enable or disable LeWI (val=true/false)')
 	print('Options forwarded to rebalance.py:')
 	print('\n'.join([' --%s' % name for (name,has_arg,shortname) in runexperiment.rebalance_forwarded_opts]))
 	return 1
 
+def getTrueOrFalse(s):
+	if s == 'true':
+		return True
+	elif s == 'false':
+		return False
+	else:
+		print('Bad true or false value ', s)
+		sys.exit(1)
 
 # Run experiments
 def main(argv):
@@ -53,7 +63,8 @@ def main(argv):
 										  'local', 'global', 'extrae', 'verbose', 'extrae-preload', 'extrae-as-threads',
 										  'no-extrae-as-threads', 'no-rebalance',
 										  'continue-after-error', 'no-dlb',
-										  'local-period=', 'trace-suffix=', 'nanos6='] + rebalance_getopt)
+										  'local-period=', 'trace-suffix=', 'nanos6=',
+										  'enable-drom=', 'enable-lewi='] + rebalance_getopt)
 
 	except getopt.error as msg:
 		print(msg)
@@ -105,6 +116,10 @@ def main(argv):
 			runexperiment.set_param('trace_suffix', a)
 		elif o == '--nanos6':
 			runexperiment.set_param('debug', a)
+		elif o == '--enable-drom':
+			runexperiment.set_param('enable_drom', getTrueOrFalse(a))
+		elif o == '--enable-lewi':
+			runexperiment.set_param('enable_lewi', getTrueOrFalse(a))
 		else:
 			try:
 				options = ['--' + name for (name, has_arg, shortname) in runexperiment.rebalance_forwarded_opts]

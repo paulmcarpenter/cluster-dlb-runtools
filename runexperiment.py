@@ -45,7 +45,9 @@ params = {'use_dlb' : True,
 		  'trace_suffix' : '',
 		  'oversubscribe' : True,
           #'debug' : 'debug'}
-          'debug' : True}
+          'debug' : True,
+		  'enable_drom' : True,
+		  'enable_lewi' : True}
 
 
 def set_param(name, value):
@@ -94,6 +96,9 @@ def init(cmd, rebalance_arg_values):
 		add_override_prefix('dlb.enabled', 'true')
 	else:
 		add_override_prefix('dlb.enabled', 'false')
+
+	add_override_prefix('dlb.enable_drom', 'true' if params['enable_drom'] else 'false')
+	add_override_prefix('dlb.enable_lewi', 'true' if params['enable_lewi'] else 'false')
 
 	if params['extrae_preload'] and params['instrumentation'] == 'extrae':
 		if not 'EXTRAE_HOME' in os.environ:

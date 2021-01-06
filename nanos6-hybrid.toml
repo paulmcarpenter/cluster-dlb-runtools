@@ -63,6 +63,8 @@
 [dlb]
 	# Enable DLB support. Default is false
 	enabled = false
+	enable_drom = true
+	enable_lewi = true
 
 [hardware_counters]
 	# Enable the verbose mode of hardware counters, printing a small summary of metrics at the
