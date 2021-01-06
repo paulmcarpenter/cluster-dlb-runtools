@@ -96,4 +96,10 @@ topologies = {
 # 	return s
 
 def get_topology(nodes, deg, vranks):
+	if vranks == 1:
+		if deg != nodes:
+			return None
+		else:
+			return ','.join([str(n) for n in range(0,nodes)])
+
 	return topologies[ (vranks, nodes, deg) ]
