@@ -16,8 +16,9 @@ def Usage():
 	print(' -h                      Show this help')
 	print(' --vranks                Number of vranks')
 	print(' --degree d              Set degree')
-	print(' --local                 Use local policy')
-	print(' --global                Use global policy')
+	print(' --local                 Use local policy (and enable hybrid)')
+	print(' --global                Use global policy (and enable hybrid)')
+	print(' --no-dlb                Do not use DLB (must not have hybrid enabled)')
 	print(' --no-rebalance          No rebalance policy')
 	print(' --local-period          cluster.hybrid.local_time_period for local policy')
 	print(' --extrae                Generate extrae trace')
@@ -46,7 +47,7 @@ def getTrueOrFalse(s):
 # Run experiments
 def main(argv):
 
-	degree = 2
+	degree = 1
 	vranks = None
 	continue_after_error = False
 	policy = None
@@ -140,6 +141,11 @@ def main(argv):
 		runexperiment.set_param('use_hybrid', False)
 	else:
 		runexperiment.set_param('use_hybrid', True)
+
+	if runexperiment.params['use_dlb'] is False:
+		if runexperiment.params['use_hybrid'] == True:
+			print('Cannot disable DLB in hybrid version')
+			return 1
 
 	if len(args) < 2:
 		return Usage()

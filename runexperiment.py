@@ -113,8 +113,9 @@ def init(cmd, rebalance_arg_values):
 	else:
 		add_override_prefix('dlb.enabled', 'false')
 
-	add_override_prefix('dlb.enable_drom', 'true' if params['enable_drom'] else 'false')
-	add_override_prefix('dlb.enable_lewi', 'true' if params['enable_lewi'] else 'false')
+	if params['use_hybrid']:
+		add_override_prefix('dlb.enable_drom', 'true' if params['enable_drom'] else 'false')
+		add_override_prefix('dlb.enable_lewi', 'true' if params['enable_lewi'] else 'false')
 
 	if params['extrae_preload'] and params['instrumentation'] == 'extrae':
 		if not 'EXTRAE_HOME' in os.environ:
