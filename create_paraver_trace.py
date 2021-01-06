@@ -12,5 +12,5 @@ pwd = os.getcwd()
 fp = open('TRACE.mpits', 'w')
 for fname in files:
 	if fname.endswith('.mpit'):
-		print >> fp, '%s/set-0/%s named' % (pwd, fname)
+		print('%s/set-0/%s named' % (pwd, fname), file=fp)
 fp.close()
