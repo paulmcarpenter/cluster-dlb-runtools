@@ -221,7 +221,7 @@ def run_experiment(nodes, deg, vranks, desc):
 	add_override(nanos6_override, 'version.debug', 'true' if debug else 'false')
 
 	if not params['instrumentation'] is None:
-		add_override(nanos6_override, 'version.instrument', instrumentation)
+		add_override(nanos6_override, 'version.instrument', params['instrumentation'])
 	else:
 		add_override(nanos6_override, 'version.instrument', 'none')
 
