@@ -6,7 +6,22 @@ import time
 global tracedir_opts
 global extrae_preload_sh
 
+nanos6_override_prefix = {}
 extrae_preload_sh = None
+
+def add_override(keyvals, key, value):
+	assert not key in keyvals
+	keyvals[key] = value
+
+def add_override_prefix(key, value):
+	global nanos6_override_prefix
+	add_override(nanos6_override_prefix, key, value)
+
+def get_nanos6_override(keyvals):
+	items = sorted(keyvals.items())
+	return ','.join([ '%s=%s' % (key,value) for (key,value) in items])
+
+
 
 # Options to rebalance.py that should be forwarded. The order matters for packing arguments
 #                             Option        has    Short 
@@ -30,7 +45,7 @@ params = {'use_dlb' : True,
 		  'trace_suffix' : '',
 		  'oversubscribe' : True,
           #'debug' : 'debug'}
-          'debug' : ''}
+          'debug' : True}
 
 
 def set_param(name, value):
@@ -76,9 +91,9 @@ def init(cmd, rebalance_arg_values):
 
 	global extrae_preload_sh
 	if params['use_dlb']:
-		os.environ['NANOS6_ENABLE_DLB'] = '1'
+		add_override_prefix('dlb.enabled', 'true')
 	else:
-		os.environ['NANOS6_ENABLE_DLB'] = '0'
+		add_override_prefix('dlb.enabled', 'false')
 
 	if params['extrae_preload'] and params['instrumentation'] == 'extrae':
 		if not 'EXTRAE_HOME' in os.environ:
@@ -108,7 +123,6 @@ def run_experiment(nodes, deg, vranks, desc):
 	policy = params['policy']
 	extrae_as_threads = params['extrae_as_threads']
 
-
 	# Tracedir and rebalance options
 	rebalance_opts = ''
 	tracedir_opts = ''
@@ -131,7 +145,6 @@ def run_experiment(nodes, deg, vranks, desc):
 	# Clean DLB
 	if params['use_dlb']:
 		do_cmd('mpirun -np %d dlb_shm -d' % nodes)
-
 
 	
 	if policy == 'global':
@@ -161,10 +174,12 @@ def run_experiment(nodes, deg, vranks, desc):
 		do_cmd('rm -rf set-0/ TRACE.mpits')
 
 	# Run experiment
+	global nanos6_override_prefix
+	nanos6_override = nanos6_override_prefix
 	s = ''
 	if params['use_hybrid']:
-		s += 'NANOS6_CLUSTER_SPLIT="%s" ' % desc
-		s += 'NANOS6_CLUSTER_HYBRID_POLICY="%s" ' % hybrid_policy
+		add_override(nanos6_override, 'cluster.split', desc)
+		add_override(nanos6_override, 'cluster.hybrid_policy', hybrid_policy)
 
 	if params['use_dlb'] or params['oversubscribe']:
 		s += 'MV2_ENABLE_AFFINITY=0 '
@@ -172,26 +187,26 @@ def run_experiment(nodes, deg, vranks, desc):
 		s += 'MV2_ENABLE_AFFINITY=1 '
 
 	debug = params['debug']
+	assert debug == True or debug == False
+	add_override(nanos6_override, 'version.debug', debug)
+
 	if not params['instrumentation'] is None:
-		if debug != '':
-			debug = '-' + debug
-		s = s + 'NANOS6=%s%s ' % (params['instrumentation'], debug)
+		add_override(nanos6_override, 'version.instrument', instrumentation)
 	else:
-		s = s + 'NANOS6=%s ' % debug
+		add_override(nanos6_override, 'version.instrument', 'none')
 
 	if params['instrumentation']== 'extrae' and params['extrae_preload']:
 	 	s = s + 'EXTRAE_ON=1 '
 
 	if extrae_as_threads:
-		s = s + 'NANOS6_EXTRAE_AS_THREADS=1 '
+		add_override(nanos6_override, 'instrument.extrae.as_threads', 'true')
 	else:
-		if 'NANOS6_EXTRAE_AS_THREADS' in os.environ.keys():
-			del os.environ['NANOS6_EXTRAE_AS_THREADS']
+		add_override(nanos6_override, 'instrument.extrae.as_threads', 'false')
 	if params['local_period'] is not None:
-		s = s + 'NANOS6_LOCAL_TIME_PERIOD=%d ' % params['local_period']
-	else:
-		if 'NANOS6_LOCAL_TIME_PERIOD' in os.environ.keys():
-			del os.environ['NANOS6_LOCAL_TIME_PERIOD']
+		add_override(nanos6_override, 'cluster.hybrid.local_time_period', params['local_period'])
+
+	s += ' NANOS6_CONFIG_OVERRIDE=\"%s\" ' % get_nanos6_override(nanos6_override)
+	
 	s += 'mpirun -np %d %s ' % (vranks*deg, cmd)
 	retval = do_cmd(s)
 

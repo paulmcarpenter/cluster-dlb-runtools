@@ -100,7 +100,7 @@
 	[instrument.extrae]
 		# Indicate whether the trace should show the activity of the threads instead of the CPUs'
 		# activity. Default is false, which shows the activity of CPUs
-		as_threads = false
+		as_threads = true
 		# Choose the detail level of the information generated in extrae traces. Default is 1
 		detail_level = 1
 		# Generate internal cluster communication events in the extrae traces.  Default is true.
@@ -136,6 +136,11 @@
 	# Indicate the virtual address space start. If set to 0x00000000, the runtime will find a
 	# suitable address. Default is 0x00000000
 	va_start = 0x00000000
+
+	[cluster.hybrid]
+		split = ""
+		hybrid_policy = ""
+		local_time_period = 0
 
 [memory]
 	[memory.pool]
