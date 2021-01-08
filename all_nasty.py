@@ -15,6 +15,7 @@ import getopt
 
 max_num_nodes = None
 
+passed_opts_noarg = ['no-hash', 'no-taskwait', 'no-taskwaiton']
 
 def Usage():
 	print('all_nasty.py <options> <num_nodes>')
@@ -22,6 +23,9 @@ def Usage():
 	print(' -h                      Show this help')
 	print(' --continue-after-error  To try to find more errors')
 	print(' --iterations n          Number of tests')
+	print('Arguments passed to ompss-2-testgen:')
+	for o in passed_opts_noarg:
+		print(' --%s' % o)
 	return 1
 
 
@@ -66,12 +70,8 @@ def get_nodes(args):
 	assert False # No --nodes argument
 		
 
-# Use current directory or find it on the PATH
-nasty = './nasty.py' if os.path.exists('./nasty.py') else 'nasty.py'
-
 def generate_compile_and_run(args, nasty_args_fixed):
-	global nasty
-	command = [nasty] + args
+	command = ['ompss-2-testgen'] + args
 	command.extend(nasty_args_fixed)
 
 	print(' '.join(command))
@@ -114,10 +114,11 @@ def main(argv):
 	continue_after_error = False
 	max_tasks = None
 	nasty_args_fixed = []
+
+
 	try:
 		opts, args = getopt.getopt( argv[1:],
-									'h', ['help', 'continue-after-error', 'iterations=', 'max-tasks=',
-									'no-hash', 'no-taskwait', 'no-taskwaiton'])
+									'h', ['help', 'continue-after-error', 'iterations=', 'max-tasks='] + passed_opts_noarg)
 
 	except getopt.error as msg:
 		print(msg)
@@ -132,8 +133,10 @@ def main(argv):
 			iterations = int(a)
 		elif o == '--max-tasks':
 			max_tasks = int(a)
-		elif o in ('--no-hash', '--no-taskwait', '--no-taskwaiton'):
+		elif len(o) > 2 and o[2:] in passed_opts_no_arg:
 			nasty_args_fixed.append(o)
+		else:
+			assert False
 
 	if len(args) != 1:
 		return Usage()
