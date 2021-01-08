@@ -15,7 +15,7 @@ import getopt
 
 max_num_nodes = None
 
-passed_opts_noarg = ['no-hash', 'no-taskwait', 'no-taskwaiton']
+passed_opts_noarg = ['no-hash', 'no-taskwait', 'no-taskwaiton', 'no-taskwaitnoflush']
 
 def Usage():
 	print('all_nasty.py <options> <num_nodes>')
@@ -133,7 +133,7 @@ def main(argv):
 			iterations = int(a)
 		elif o == '--max-tasks':
 			max_tasks = int(a)
-		elif len(o) > 2 and o[2:] in passed_opts_no_arg:
+		elif len(o) > 2 and o[2:] in passed_opts_noarg:
 			nasty_args_fixed.append(o)
 		else:
 			assert False
