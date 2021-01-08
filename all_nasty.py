@@ -14,6 +14,7 @@ import subprocess
 import getopt
 
 max_num_nodes = None
+use_asan = False
 
 passed_opts_noarg = ['no-hash', 'no-taskwait', 'no-taskwaiton', 'no-taskwaitnoflush']
 
@@ -21,6 +22,7 @@ def Usage():
 	print('all_nasty.py <options> <num_nodes>')
 	print('where:')
 	print(' -h                      Show this help')
+	print('--asan                   Build with ASan')
 	print(' --continue-after-error  To try to find more errors')
 	print(' --iterations n          Number of tests')
 	print('Arguments passed to ompss-2-testgen:')
@@ -71,26 +73,33 @@ def get_nodes(args):
 		
 
 def generate_compile_and_run(args, nasty_args_fixed):
-	command = ['ompss-2-testgen'] + args
-	command.extend(nasty_args_fixed)
 
-	print(' '.join(command))
-	ret = 1
+	global use_asan
 
 	# Create the test program
+	gen_cmd = ['ompss-2-testgen'] + args
+	gen_cmd.extend(nasty_args_fixed)
+
+	ret = 1
 	with open('nasty.c', 'w') as fout:
-		ret = subprocess.call(command, stdout=fout)
+		ret = subprocess.call(gen_cmd, stdout=fout)
 		if ret != 0:
 			subprocess.call(['cat', 'nasty.c'])
 	if ret != 0:
 		return None
 
-	# Compile it
-	command = ['mcc', '-o', 'nasty', '--ompss-2', 'nasty.c']
-	print(' '.join(command))
-	ret = subprocess.call(command)
+	# Compile the test program
+	if use_asan:
+		asan_opts = '-fsanitize=address -fno-omit-frame-pointer -ggdb '
+	else:
+		asan_opts = ''
+	build_cmd = 'mcc %s--ompss-2 -o nasty nasty.c' % asan_opts
+
+	print(build_cmd)
+	ret = os.system(build_cmd)
 	if ret != 0:
-		return ret
+		print('Could not build program')
+		sys.exit(1)
 
 	# How many nodes does it has
 	num_nodes = get_nodes(args)
@@ -110,15 +119,16 @@ def generate_compile_and_run(args, nasty_args_fixed):
 
 def main(argv):
 
+	global use_asan
+
 	iterations = 100000
 	continue_after_error = False
 	max_tasks = None
 	nasty_args_fixed = []
 
-
 	try:
 		opts, args = getopt.getopt( argv[1:],
-									'h', ['help', 'continue-after-error', 'iterations=', 'max-tasks='] + passed_opts_noarg)
+									'h', ['help', 'asan', 'continue-after-error', 'iterations=', 'max-tasks='] + passed_opts_noarg)
 
 	except getopt.error as msg:
 		print(msg)
@@ -127,6 +137,8 @@ def main(argv):
 	for o, a in opts:
 		if o in ('-h', '--help'):
 			return Usage()
+		elif o == '--asan':
+			use_asan = True
 		elif o == '--continue-after-error':
 			continue_after_error = True
 		elif o == '--iterations':
