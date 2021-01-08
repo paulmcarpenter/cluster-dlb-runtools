@@ -17,11 +17,11 @@ max_num_nodes = None
 
 
 def Usage():
-	print '.all/nasty.py <options> <num_nodes>'
-	print 'where:'
-	print ' -h                      Show this help'
-	print ' --continue-after-error  To try to find more errors'
-	print ' --iterations n          Number of tests'
+	print('all_nasty.py <options> <num_nodes>')
+	print('where:')
+	print(' -h                      Show this help')
+	print(' --continue-after-error  To try to find more errors')
+	print(' --iterations n          Number of tests')
 	return 1
 
 
@@ -74,7 +74,7 @@ def generate_compile_and_run(args, nasty_args_fixed):
 	command = [nasty] + args
 	command.extend(nasty_args_fixed)
 
-	print ' '.join(command)
+	print(' '.join(command))
 	ret = 1
 
 	# Create the test program
@@ -87,7 +87,7 @@ def generate_compile_and_run(args, nasty_args_fixed):
 
 	# Compile it
 	command = ['mcc', '-o', 'nasty', '--ompss-2', 'nasty.c']
-	print ' '.join(command)
+	print(' '.join(command))
 	ret = subprocess.call(command)
 	if ret != 0:
 		return ret
@@ -97,12 +97,12 @@ def generate_compile_and_run(args, nasty_args_fixed):
 
 	# Now run it
 	command = ['mpirun', '-np', str(num_nodes), './nasty']
-	print ' '.join(command)
+	print(' '.join(command))
 	p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	for line in p.stdout.readlines():
-		print line
+		print(line)
 	for line in p.stderr.readlines():
-		print line
+		print(line)
 	sys.stdout.flush()
 	ret = p.wait()
 	return ret
@@ -119,9 +119,9 @@ def main(argv):
 									'h', ['help', 'continue-after-error', 'iterations=', 'max-tasks=',
 									'no-hash', 'no-taskwait', 'no-taskwaiton'])
 
-	except getopt.error, msg:
-		print msg
-   		print "for help use --help"
+	except getopt.error as msg:
+		print(msg)
+		print("for help use --help")
 		sys.exit(2)
 	for o, a in opts:
 		if o in ('-h', '--help'):
@@ -165,7 +165,7 @@ def main(argv):
 	# Do in a random order in case we run out of time
 	for k, args in enumerate(random_iterate_args(nasty_args)):
 	
-		print 'Test', k
+		print('Test', k)
 		if k >= iterations:
 			break
 
@@ -173,20 +173,20 @@ def main(argv):
 		ret = generate_compile_and_run(args, nasty_args_fixed)
 		if ret is None:
 			# Did not generate or compile: skip rest
-			print 'Did not generate or compile'
+			print('Did not generate or compile')
 			nocompiles += 1
 			if not continue_after_error:
 				break
 		elif ret != 0:
-			print 'Experiment failed!'
+			print('Experiment failed!')
 			failures += 1
 			if not continue_after_error:
 				break
 	
 	if failures == 0 and nocompiles == 0:
-		print 'All tests passed'
+		print('All tests passed')
 	else:
-		print 'ERROR: ', nocompiles, 'did not compile and', failures, 'failed, of total', total, 'tests'
+		print('ERROR: ', nocompiles, 'did not compile and', failures, 'failed, of total', total, 'tests')
 	
 	return 0
 			
