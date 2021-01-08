@@ -16,7 +16,9 @@ import getopt
 max_num_nodes = None
 use_asan = False
 
-passed_opts_noarg = ['no-hash', 'no-taskwait', 'no-taskwaiton', 'no-taskwaitnoflush']
+testgen_opts_noarg = ['no-hash', 'no-taskwait', 'no-taskwaiton', 'no-taskwaitnoflush']
+runhybrid_opts_noarg = ['local', 'global', 'no-dlb', 'no-rebalance']
+runhybrid_opts_arg = ['local-period', 'enable-drom', 'enable-lewi', 'config-override']
 
 def Usage():
 	print('all_nasty.py <options> <num_nodes>')
@@ -26,7 +28,10 @@ def Usage():
 	print(' --continue-after-error  To try to find more errors')
 	print(' --iterations n          Number of tests')
 	print('Arguments passed to ompss-2-testgen:')
-	for o in passed_opts_noarg:
+	for o in testgen_opts_noarg:
+		print(' --%s' % o)
+	print('Arguments passed to runhybrid:')
+	for o in runhybrid_opts_noarg + runhybrid_opts_arg:
 		print(' --%s' % o)
 	return 1
 
@@ -72,7 +77,7 @@ def get_nodes(args):
 	assert False # No --nodes argument
 		
 
-def generate_compile_and_run(args, nasty_args_fixed):
+def generate_compile_and_run(args, nasty_args_fixed, runhybrid_args):
 
 	global use_asan
 
@@ -105,13 +110,13 @@ def generate_compile_and_run(args, nasty_args_fixed):
 	num_nodes = get_nodes(args)
 
 	# Now run it
-	command = ['mpirun', '-np', str(num_nodes), './nasty']
+	command = ['runhybrid.py'] + runhybrid_args + [str(num_nodes), './nasty']
 	print(' '.join(command))
 	p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	for line in p.stdout.readlines():
-		print(line)
+		print(line.decode('utf-8').rstrip())
 	for line in p.stderr.readlines():
-		print(line)
+		print(line.decode('utf-8').rstrip())
 	sys.stdout.flush()
 	ret = p.wait()
 	return ret
@@ -125,10 +130,14 @@ def main(argv):
 	continue_after_error = False
 	max_tasks = None
 	nasty_args_fixed = []
+	runhybrid_args = []
 
 	try:
 		opts, args = getopt.getopt( argv[1:],
-									'h', ['help', 'asan', 'continue-after-error', 'iterations=', 'max-tasks='] + passed_opts_noarg)
+									'h', ['help', 'asan', 'continue-after-error', 'iterations=', 'max-tasks=']
+										 + testgen_opts_noarg
+										 + runhybrid_opts_noarg
+										 + [o + '=' for o in runhybrid_opts_arg])
 
 	except getopt.error as msg:
 		print(msg)
@@ -145,8 +154,13 @@ def main(argv):
 			iterations = int(a)
 		elif o == '--max-tasks':
 			max_tasks = int(a)
-		elif len(o) > 2 and o[2:] in passed_opts_noarg:
+		elif len(o) > 2 and o[2:] in testgen_opts_noarg:
 			nasty_args_fixed.append(o)
+		elif len(o) > 2 and o[2:] in runhybrid_opts_noarg:
+			runhybrid_args.append(o)
+		elif len(o) > 2 and o[2:] in runhybrid_opts_arg:
+			runhybrid_args.append(o)
+			runhybrid_args.append(a)
 		else:
 			assert False
 
@@ -185,7 +199,7 @@ def main(argv):
 			break
 
 		total += 1
-		ret = generate_compile_and_run(args, nasty_args_fixed)
+		ret = generate_compile_and_run(args, nasty_args_fixed, runhybrid_args)
 		if ret is None:
 			# Did not generate or compile: skip rest
 			print('Did not generate or compile')
