@@ -25,7 +25,7 @@ def Usage():
 	print(' --verbose               Generate verbose trace')
 	print(' --extrae-as-threads     Set instrument.extrae.as_threads=true (default)')
 	print(' --no-extrae-as-threads  Unset instrument.extrae.as_threads=false')
-	print(' --nanos6=               Nanos6 library')
+	print(' --debug true/false      Enable or disable debug mode')
 	print(' --trace-suffix s        Suffix for trace directory and filename')
 	print(' --continue-after-error  To try to find more errors')
 	print(' --enable-drom val       Enable or disable DROM (val=true/false)')
@@ -65,7 +65,7 @@ def main(argv):
 										  'local', 'global', 'extrae', 'verbose', 'extrae-preload', 'extrae-as-threads',
 										  'no-extrae-as-threads', 'no-rebalance',
 										  'continue-after-error', 'no-dlb',
-										  'local-period=', 'trace-suffix=', 'nanos6=',
+										  'local-period=', 'trace-suffix=', 'debug=',
 										  'enable-drom=', 'enable-lewi=', 'config-override='] + rebalance_getopt)
 
 	except getopt.error as msg:
@@ -116,8 +116,8 @@ def main(argv):
 			runexperiment.set_param('local_period', int(a))
 		elif o == '--trace-suffix':
 			runexperiment.set_param('trace_suffix', a)
-		elif o == '--nanos6':
-			runexperiment.set_param('debug', a)
+		elif o == '--debug':
+			runexperiment.set_param('debug', getTrueOrFalse(a))
 		elif o == '--enable-drom':
 			runexperiment.set_param('enable_drom', getTrueOrFalse(a))
 		elif o == '--enable-lewi':

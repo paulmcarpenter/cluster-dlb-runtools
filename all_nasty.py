@@ -26,6 +26,7 @@ def Usage():
 	print(' -h                      Show this help')
 	print('--asan                   Build with ASan')
 	print(' --continue-after-error  To try to find more errors')
+	print(' --max-tasks t           Maximum number of tasks')
 	print(' --iterations n          Number of tests')
 	print('Arguments passed to ompss-2-testgen:')
 	for o in testgen_opts_noarg:
