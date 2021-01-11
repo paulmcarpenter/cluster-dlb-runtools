@@ -10,7 +10,7 @@ def summarize():
 	total = sum([c for (k,c) in counts.items()])
 	evs = reversed(sorted([(c,k) for (k,c) in counts.items()]))
 	for c,k in evs:
-		print '%4.1f%% %d %s' % (c*100.0 / total, c,k)
+		print('%4.1f%% %d %s' % (c*100.0 / total, c,k))
 
 fp = open(sys.argv[1])
 for k,line in enumerate(fp):
