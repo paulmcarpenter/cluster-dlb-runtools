@@ -21,8 +21,7 @@ def Usage():
 	print(' --no-dlb                Do not use DLB (must not have hybrid enabled)')
 	print(' --no-rebalance          No rebalance policy')
 	print(' --local-period          cluster.hybrid.local_time_period for local policy')
-	print(' --extrae                Generate extrae trace')
-	print(' --verbose               Generate verbose trace')
+	print(' --instrumentation       Set instrumentation, e.g. extrae, verbose or stats')
 	print(' --extrae-as-threads     Set instrument.extrae.as_threads=true (default)')
 	print(' --no-extrae-as-threads  Unset instrument.extrae.as_threads=false')
 	print(' --debug true/false      Enable or disable debug mode')
@@ -62,7 +61,8 @@ def main(argv):
 
 		opts, args = getopt.getopt( argv[1:],
 									'h', ['help', 'degree=', 'vranks=',
-										  'local', 'global', 'extrae', 'verbose', 'extrae-preload', 'extrae-as-threads',
+										  'local', 'global', 'extrae', 'verbose', 'instrumentation=',
+										  'extrae-preload', 'extrae-as-threads',
 										  'no-extrae-as-threads', 'no-rebalance',
 										  'continue-after-error', 'no-dlb',
 										  'local-period=', 'trace-suffix=', 'debug=',
@@ -100,6 +100,9 @@ def main(argv):
 		elif o == '--verbose':
 			assert runexperiment.params['instrumentation'] is None
 			runexperiment.set_param('instrumentation', 'verbose')
+		elif o == '--instrumentation':
+			assert runexperiment.params['instrumentation'] is None
+			runexperiment.set_param('instrumentation', a)
 		elif o == '--extrae-preload':
 			runexperiment.set_param('extrae_preload', True)
 		elif o == '--extrae-as-threads':
