@@ -158,7 +158,10 @@ def main(argv):
 
 	runexperiment.init(' '.join(args[1:]), rebalance_arg_values)
 	
-	desc = topologies.get_topology(nodes, degree, vranks)
+	if runexperiment.params['use_dlb'] is True:
+		desc = topologies.get_topology(nodes, degree, vranks)
+	else:
+		desc = ''
 
 	runexperiment.set_param('policy', policy)
 	runexperiment.set_param('extrae_as_threads', extrae_as_threads)
