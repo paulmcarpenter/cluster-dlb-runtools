@@ -6,6 +6,7 @@ def Usage():
 	print("""trace_stats.py <options> <prv_file>
 where:
 	-h              Show this help
+	--event type    Show statistics for a particular event type
 """)
 	return 1
 
@@ -21,9 +22,10 @@ def summarize():
 		print('%4.1f%% %d %s' % (c*100.0 / total, c,k))
 
 def main(argv):
+	event_type = None
 	try:
 		opts, args = getopt.getopt( argv[1:],
-									'h', ['help'])
+									'h', ['help', 'event='])
 
 	except getopt.error as msg:
 		print(msg)
@@ -32,23 +34,44 @@ def main(argv):
 	for o, a in opts:
 		if o in ('-h', '--help'):
 			return Usage()
+		elif o == '--event':
+			event_type = int(a)
+		else:
+			assert False
 
-	fp = open(sys.argv[1])
-	for k,line in enumerate(fp):
-		if k % 1000000 == 0:
-			summarize()
-		if line.startswith('1'):
-			inc('State ')
-		elif line.startswith('2'):
-			s = line.split(':')
-			s = s[6:]
-			while len(s) >= 2:
-				if s[0] == '9000000':
-					inc('Event ' + s[0] + ':' + s[1].rstrip())
-				inc('Event ' + s[0])
-				s = s[2:]
-		elif line.startswith('3'):
-			inc('Comm ')
+	if len(args) == 0:
+		return Usage()
+	fp = open(args[0])
+
+	if event_type is None:
+		# Table of event types
+		for k,line in enumerate(fp):
+			if k % 1000000 == 0:
+				summarize()
+			if line.startswith('1'):
+				inc('State ')
+			elif line.startswith('2'):
+				s = line.split(':')
+				s = s[6:]
+				while len(s) >= 2:
+					if s[0] == '9000000':
+						inc('Event ' + s[0] + ':' + s[1].rstrip())
+					inc('Event ' + s[0])
+					s = s[2:]
+			elif line.startswith('3'):
+				inc('Comm ')
+	else:
+		# Table of event values for given type
+		for k,line in enumerate(fp):
+			if k % 1000000 == 0:
+				summarize()
+			if line.startswith('2'):
+				s = line.split(':')
+				s = s[6:]
+				while len(s) >= 2:
+					if int(s[0]) == event_type:
+						inc('Event ' + s[0] + ':' + s[1].rstrip())
+					s = s[2:]
 
 	summarize()
 	fp.close()
