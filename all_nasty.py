@@ -16,9 +16,9 @@ import getopt
 max_num_nodes = None
 use_asan = False
 
-testgen_opts_noarg = ['no-hash', 'no-taskwait', 'no-taskwaiton', 'no-taskwaitnoflush']
+testgen_opts_noarg = ['no-hash', 'no-taskwait', 'no-taskwaiton', 'no-taskwaitnoflush', 'wait-clause']
 runhybrid_opts_noarg = ['local', 'global', 'no-dlb', 'no-rebalance']
-runhybrid_opts_arg = ['local-period', 'enable-drom', 'enable-lewi', 'config-override']
+runhybrid_opts_arg = ['local-period', 'enable-drom', 'enable-lewi', 'config-override', 'debug']
 
 def Usage():
 	print('all_nasty.py <options> <num_nodes>')
@@ -118,6 +118,8 @@ def generate_compile_and_run(args, nasty_args_fixed, runhybrid_args):
 		print(line.decode('utf-8').rstrip())
 	for line in p.stderr.readlines():
 		print(line.decode('utf-8').rstrip())
+	p.stdout.close()
+	p.stderr.close()
 	sys.stdout.flush()
 	ret = p.wait()
 	return ret
