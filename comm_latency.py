@@ -48,8 +48,8 @@ fp.close()
 
 for k,name in enumerate(message_names):
 	if k in nums:
-		print('%-16s avg = %.2f ms max = %.2f ms' % \
-				(name, 1.0 * tots[k] / nums[k] / 1e6, 1.0 * maxs[k] / 1e6))
+		print('%-16s avg = %6.2f ms max = %6.2f ms, num = %4d' % \
+				(name, 1.0 * tots[k] / nums[k] / 1e6, 1.0 * maxs[k] / 1e6, nums[k]))
 	else:
 		print('%-16s none' % name)
 		
