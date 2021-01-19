@@ -24,8 +24,7 @@ for k,line in enumerate(fp):
 		while len(s) >= 2:
 			if s[0] == '9000000':
 				inc('Event ' + s[0] + ':' + s[1])
-			else:
-				inc('Event ' + s[0])
+			inc('Event ' + s[0])
 			s = s[2:]
 	elif line.startswith('3'):
 		inc('Comm ')
