@@ -138,6 +138,8 @@
 	# Indicate the virtual address space start. If set to 0x00000000, the runtime will find a
 	# suitable address. Default is 0x00000000
 	va_start = 0x00000000
+	# Use namespace implementation
+	use_namespace = true
 
 	[cluster.hybrid]
 		split = ""
