@@ -187,9 +187,9 @@ def run_experiment(nodes, deg, vranks, desc):
 	print('Experiment', 'vranks:', vranks, 'nodes:', nodes, 'deg:', deg, 'desc:', desc, 'cmd:', cmd, policy, 'rebalance:', rebalance)
 
 	rebalance_filename = None
+	do_cmd('rm -f .kill')
 	if rebalance:
 
-		do_cmd('rm -f .kill')
 		do_cmd('rm -rf .hybrid')
 
 		rebalance_filename = 'rebalance-out-%d-%d.txt' % (nodes,deg)
