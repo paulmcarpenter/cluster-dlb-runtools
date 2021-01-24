@@ -19,7 +19,7 @@ def summarize():
 	total = sum([c for (k,c) in counts.items()])
 	evs = reversed(sorted([(c,k) for (k,c) in counts.items()]))
 	for c,k in evs:
-		print('%4.1f%% %d %s' % (c*100.0 / total, c,k))
+		print('%4.1f%% %6d  %s' % (c*100.0 / total, c,k))
 
 def main(argv):
 	event_type = None
