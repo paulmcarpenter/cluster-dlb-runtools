@@ -50,7 +50,7 @@ def main(argv):
 	vranks = None
 	continue_after_error = False
 	policy = None
-	extrae_as_threads = True
+	extrae_as_threads = False
 
 	# Sensible initial value
 	runexperiment.set_param('local_period', 150)
@@ -108,8 +108,6 @@ def main(argv):
 		elif o == '--extrae-as-threads':
 			extrae_as_threads = True
 		elif o == '--no-extrae-as-threads':
-			print('** --no-extrae-as-threads does work well')
-			return 1
 			extrae_as_threads = False
 		elif o == '--continue-after-error':
 			continue_after_error = True
