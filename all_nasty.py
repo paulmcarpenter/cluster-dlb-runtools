@@ -16,7 +16,7 @@ import getopt
 max_num_nodes = None
 use_asan = False
 
-testgen_opts_noarg = ['no-hash', 'no-taskwait', 'no-taskwaiton', 'no-taskwaitnoflush', 'wait-clause']
+testgen_opts_noarg = ['no-hash', 'no-taskwait', 'no-taskwaiton', 'no-taskwaitnoflush', 'no-wait-clause']
 runhybrid_opts_noarg = ['local', 'global', 'no-dlb', 'no-rebalance']
 runhybrid_opts_arg = ['local-period', 'enable-drom', 'enable-lewi', 'config-override', 'debug']
 
