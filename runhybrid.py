@@ -147,6 +147,10 @@ def main(argv):
 		if runexperiment.params['use_hybrid'] == True:
 			print('Cannot disable DLB in hybrid version')
 			return 1
+	else:
+		if runexperiment.params['use_hybrid'] == False:
+			print('Choose policy --local or --global when using DLB')
+			return 1
 
 	if len(args) < 2:
 		return Usage()
