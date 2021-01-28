@@ -35,6 +35,7 @@ params = {'use_dlb' : True,
           'debug' : True,
 		  'enable_drom' : True,
 		  'enable_lewi' : True,
+		  'keep_set-0' : False,
 		  'config_override' : None}
 
 nanos6_override_prefix = {}
@@ -273,7 +274,10 @@ def run_experiment(nodes, deg, vranks, desc):
 			do_cmd('mv ' + prvroot + '-node.pcf ' + tracedir + '/' + tracenodename + '.pcf')
 			do_cmd('mv ' + prvroot + '-node.row ' + tracedir + '/' + tracenodename + '.row')
 			do_cmd('mv .hybrid/ ' + tracedir)
-		do_cmd('rm -rf set-0')
+			if params['keep_set-0']:
+				do_cmd('mv set-0 ' + tracedir)
+		if not params['keep_set-0']:
+			do_cmd('rm -rf set-0')
 
 		if not rebalance_filename is None:
 			do_cmd('mv ' + rebalance_filename + ' ' + tracedir)
