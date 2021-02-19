@@ -31,6 +31,7 @@ def Usage():
 	print(' --enable-lewi val       Enable or disable LeWI (val=true/false)')
 	print(' --config-override s     Strings to put in config override')
 	print(' --keep-set-0            Keep set-0 files')
+	print(' --keep                  Keep all temporary files (e.g. preload script)')
 	print('Options forwarded to rebalance.py:')
 	print('\n'.join([' --%s' % name for (name,has_arg,shortname) in runexperiment.rebalance_forwarded_opts]))
 	return 1
@@ -68,7 +69,7 @@ def main(argv):
 										  'continue-after-error', 'no-dlb',
 										  'local-period=', 'trace-suffix=', 'debug=',
 										  'enable-drom=', 'enable-lewi=', 'config-override=',
-										  'keep-set-0'] + rebalance_getopt)
+										  'keep-set-0', 'keep'] + rebalance_getopt)
 
 	except getopt.error as msg:
 		print(msg)
@@ -129,6 +130,8 @@ def main(argv):
 			runexperiment.set_param('config_override', a)
 		elif o == '--keep-set-0':
 			runexperiment.set_param('keep_set-0', True)
+		elif o == '--keep':
+			runexperiment.set_param('keep', True)
 		else:
 			try:
 				options = ['--' + name for (name, has_arg, shortname) in runexperiment.rebalance_forwarded_opts]
