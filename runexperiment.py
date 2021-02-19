@@ -36,7 +36,9 @@ params = {'use_dlb' : True,
 		  'enable_drom' : True,
 		  'enable_lewi' : True,
 		  'keep_set-0' : False,
-		  'config_override' : None}
+		  'keep' : False,
+		  'config_override' : None,
+		  'preload_prefix' : None}
 
 nanos6_override_prefix = {}
 
@@ -126,7 +128,11 @@ def init(cmd, rebalance_arg_values):
 		extrae_preload_sh = 'preload-%s-%d' % (cmd2, os.getpid())
 		fp = open(extrae_preload_sh, 'w')
 		extrae_library = '%s/lib/libnanosmpitrace.so' % os.environ['EXTRAE_HOME']
-		print('LD_PRELOAD=%s %s' % (extrae_library, cmd), file = fp)
+		if params['preload_prefix'] is not None:
+			ld_preload=':'.join([params['preload_prefix'], extrae_library])
+		else:
+			ld_preload=extrae_library
+		print('LD_PRELOAD=%s %s' % (ld_preload, cmd), file = fp)
 		fp.close()
 		do_cmd('cat ' + extrae_preload_sh)
 		cmd = 'sh ' + extrae_preload_sh
@@ -137,7 +143,8 @@ def init(cmd, rebalance_arg_values):
 def shutdown():
 	global extrae_preload_sh
 	if params['extrae_preload'] and params['instrumentation'] == 'extrae':
-		do_cmd('rm ' + extrae_preload_sh)
+		if not params['keep']:
+			do_cmd('rm ' + extrae_preload_sh)
 
 
 def run_experiment(nodes, deg, vranks, desc):
@@ -276,7 +283,7 @@ def run_experiment(nodes, deg, vranks, desc):
 			do_cmd('mv .hybrid/ ' + tracedir)
 			if params['keep_set-0']:
 				do_cmd('mv set-0 ' + tracedir)
-		if not params['keep_set-0']:
+		if not params['keep_set-0'] and not params['keep']:
 			do_cmd('rm -rf set-0')
 
 		if not rebalance_filename is None:

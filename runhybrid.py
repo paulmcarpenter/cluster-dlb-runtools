@@ -32,6 +32,8 @@ def Usage():
 	print(' --config-override s     Strings to put in config override')
 	print(' --keep-set-0            Keep set-0 files')
 	print(' --keep                  Keep all temporary files (e.g. preload script)')
+	print(' --preload-prefix        Libraries (colon separated) to prefix if using Extrae')
+	print('                         with LD_PRELOAD, e.g. for ASan')
 	print('Options forwarded to rebalance.py:')
 	print('\n'.join([' --%s' % name for (name,has_arg,shortname) in runexperiment.rebalance_forwarded_opts]))
 	return 1
@@ -69,7 +71,7 @@ def main(argv):
 										  'continue-after-error', 'no-dlb',
 										  'local-period=', 'trace-suffix=', 'debug=',
 										  'enable-drom=', 'enable-lewi=', 'config-override=',
-										  'keep-set-0', 'keep'] + rebalance_getopt)
+										  'keep-set-0', 'keep', 'preload-prefix='] + rebalance_getopt)
 
 	except getopt.error as msg:
 		print(msg)
@@ -132,6 +134,8 @@ def main(argv):
 			runexperiment.set_param('keep_set-0', True)
 		elif o == '--keep':
 			runexperiment.set_param('keep', True)
+		elif o == '--preload-prefix':
+			runexperiment.set_param('preload_prefix', a)
 		else:
 			try:
 				options = ['--' + name for (name, has_arg, shortname) in runexperiment.rebalance_forwarded_opts]
