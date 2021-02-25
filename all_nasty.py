@@ -13,8 +13,12 @@ import random
 import subprocess
 import getopt
 
+vranks = None
+degree = None
+use_dlb = False
 max_num_nodes = None
 use_asan = False
+dlb_nodes = False
 
 testgen_opts_noarg = ['no-hash', 'no-taskwait', 'no-taskwaiton', 'no-taskwaitnoflush', 'no-wait-clause']
 runhybrid_opts_noarg = ['local', 'global', 'no-dlb', 'no-rebalance']
@@ -28,6 +32,8 @@ def Usage():
 	print(' --continue-after-error  To try to find more errors')
 	print(' --max-tasks t           Maximum number of tasks')
 	print(' --iterations n          Number of tests')
+	print(' --vranks v              Enable cluster+DLB and set number of vranks')
+	print(' --degree d              Enable cluster+DLB and set degree')
 	print('Arguments passed to ompss-2-testgen:')
 	for o in testgen_opts_noarg:
 		print(' --%s' % o)
@@ -81,6 +87,8 @@ def get_nodes(args):
 def generate_compile_and_run(args, nasty_args_fixed, runhybrid_args):
 
 	global use_asan
+	global vranks
+	global degree
 
 	# Create the test program
 	gen_cmd = ['ompss-2-testgen'] + args
@@ -107,11 +115,15 @@ def generate_compile_and_run(args, nasty_args_fixed, runhybrid_args):
 		print('Could not build program')
 		sys.exit(1)
 
-	# How many nodes does it has
-	num_nodes = get_nodes(args)
-
+	if use_dlb:
+		# In DLB mode, use the actual number of nodes
+		runhybrid_nodes = dlb_nodes
+	else:
+		# Otherwise use the number of nodes passed to ompss-2-testgen
+		runhybrid_nodes = get_nodes(args)
+	
 	# Now run it
-	command = ['runhybrid.py'] + runhybrid_args + [str(num_nodes), './nasty']
+	command = ['runhybrid.py'] + runhybrid_args + [str(runhybrid_nodes), './nasty']
 	print(' '.join(command))
 	p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	for line in p.stdout.readlines():
@@ -128,6 +140,10 @@ def generate_compile_and_run(args, nasty_args_fixed, runhybrid_args):
 def main(argv):
 
 	global use_asan
+	global vranks
+	global degree
+	global use_dlb
+	global dlb_nodes
 
 	iterations = 100000
 	continue_after_error = False
@@ -137,7 +153,7 @@ def main(argv):
 
 	try:
 		opts, args = getopt.getopt( argv[1:],
-									'h', ['help', 'asan', 'continue-after-error', 'iterations=', 'max-tasks=']
+									'h', ['help', 'asan', 'continue-after-error', 'iterations=', 'max-tasks=', 'vranks=', 'degree=']
 										 + testgen_opts_noarg
 										 + runhybrid_opts_noarg
 										 + [o + '=' for o in runhybrid_opts_arg])
@@ -157,6 +173,10 @@ def main(argv):
 			iterations = int(a)
 		elif o == '--max-tasks':
 			max_tasks = int(a)
+		elif o == '--vranks':
+			vranks = int(a)
+		elif o == '--degree':
+			degree = int(a)
 		elif len(o) > 2 and o[2:] in testgen_opts_noarg:
 			nasty_args_fixed.append(o)
 		elif len(o) > 2 and o[2:] in runhybrid_opts_noarg:
@@ -173,6 +193,17 @@ def main(argv):
 	global max_num_nodes
 	max_num_nodes = int(args[0])
 
+	if vranks is None:
+		runhybrid_args.append('--no-dlb')
+		use_dlb = False
+	else:
+		if degree is None:
+			degree = max_num_nodes
+		runhybrid_args.extend(['--vranks', str(vranks)])
+		runhybrid_args.extend(['--degree', str(degree)])
+		dlb_nodes = max_num_nodes
+		use_dlb = True
+
 	def get_tasks_list():
 		candidates = list(range(30,100,5)) + [200,500,1000]
 		if max_tasks is None:
@@ -183,8 +214,13 @@ def main(argv):
 			else:
 				return list(range(1,max_tasks))
 
+	if use_dlb:
+		valid_num_nodes = range(1, degree+1)
+	else:
+		valid_num_nodes = range(1, max_num_nodes+1)
+
 	# All valid combinations of the arguments
-	nasty_args = [ ('--nodes', range(1, max_num_nodes)),
+	nasty_args = [ ('--nodes', valid_num_nodes),
 				   ('--tasks', get_tasks_list() ),
 				   ('--nesting', [2,3,4,5,10]),
 				   ('--seed', range(1,20) )]
