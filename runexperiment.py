@@ -38,7 +38,8 @@ params = {'use_dlb' : True,
 		  'keep_set-0' : False,
 		  'keep' : False,
 		  'config_override' : None,
-		  'preload_prefix' : None}
+		  'preload_prefix' : None,
+		  'discard_trace' : False}
 
 nanos6_override_prefix = {}
 
@@ -265,26 +266,30 @@ def run_experiment(nodes, deg, vranks, desc):
 		do_cmd('mpi2prv -f TRACE.mpits')
 
 		# Now move traces to a subdirectory
-		tracefname, tracenodename = tracedir_name(desc, cmd, policy)
-		tracedir = params['trace_location'] + '/' + tracefname
-		prvroot = find_paraver_file()
-		print('prvroot:', prvroot)
-		if prvroot:
-			#do_cmd('rm -rf ' + tracedir)
-			do_cmd('num_cores ' + prvroot + '.prv ' + prvroot + '-node.prv')
-			do_cmd('mkdir -p ' + tracedir)
-			do_cmd('mv TRACE.mpits ' + tracedir)
-			do_cmd('mv ' + prvroot + '.prv ' + tracedir + '/' + tracefname + '.prv')
-			do_cmd('mv ' + prvroot + '.pcf ' + tracedir + '/' + tracefname + '.pcf')
-			do_cmd('mv ' + prvroot + '.row ' + tracedir + '/' + tracefname + '.row')
-			do_cmd('mv ' + prvroot + '-node.prv ' + tracedir + '/' + tracenodename + '.prv')
-			do_cmd('mv ' + prvroot + '-node.pcf ' + tracedir + '/' + tracenodename + '.pcf')
-			do_cmd('mv ' + prvroot + '-node.row ' + tracedir + '/' + tracenodename + '.row')
-			do_cmd('mv .hybrid/ ' + tracedir)
-			if params['keep_set-0']:
-				do_cmd('mv set-0 ' + tracedir)
-		if not params['keep_set-0'] and not params['keep']:
-			do_cmd('rm -rf set-0')
+		if params['discard_trace']:
+			print('*** discarding trace due to --discard-trace ***')
+		else:
+			tracefname, tracenodename = tracedir_name(desc, cmd, policy)
+			tracedir = params['trace_location'] + '/' + tracefname
+			prvroot = find_paraver_file()
+			if prvroot:
+				#do_cmd('rm -rf ' + tracedir)
+				do_cmd('num_cores ' + prvroot + '.prv ' + prvroot + '-node.prv')
+				do_cmd('mkdir -p ' + tracedir)
+				do_cmd('mv TRACE.mpits ' + tracedir)
+				do_cmd('mv ' + prvroot + '.prv ' + tracedir + '/' + tracefname + '.prv')
+				do_cmd('mv ' + prvroot + '.pcf ' + tracedir + '/' + tracefname + '.pcf')
+				do_cmd('mv ' + prvroot + '.row ' + tracedir + '/' + tracefname + '.row')
+				do_cmd('mv ' + prvroot + '-node.prv ' + tracedir + '/' + tracenodename + '.prv')
+				do_cmd('mv ' + prvroot + '-node.pcf ' + tracedir + '/' + tracenodename + '.pcf')
+				do_cmd('mv ' + prvroot + '-node.row ' + tracedir + '/' + tracenodename + '.row')
+				do_cmd('mv .hybrid/ ' + tracedir)
+				if params['keep_set-0']:
+					do_cmd('mv set-0 ' + tracedir)
+			else:
+				print('No .prv file')
+			if not params['keep_set-0'] and not params['keep']:
+				do_cmd('rm -rf set-0')
 
 		if not rebalance_filename is None:
 			do_cmd('mv ' + rebalance_filename + ' ' + tracedir)
