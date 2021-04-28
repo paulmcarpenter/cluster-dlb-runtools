@@ -238,11 +238,11 @@ def main(argv):
 
 	mapfiles = [f for f in os.listdir('.hybrid') if f.startswith('map')]
 	for mapfile in mapfiles:
-		f = open('.hybrid/' + mapfile, 'r')
-		extrank = read_map_entry('externalRank', f.readline())
-		apprankNum = read_map_entry('apprankNum', f.readline())
-		internalRank = read_map_entry('internalRank', f.readline())
-		nodeNum = read_map_entry('nodeNum', f.readline())
+		with open('.hybrid/' + mapfile, 'r') as f:
+			extrank = read_map_entry('externalRank', f.readline())
+			apprankNum = read_map_entry('apprankNum', f.readline())
+			internalRank = read_map_entry('internalRank', f.readline())
+			nodeNum = read_map_entry('nodeNum', f.readline())
 
 		if not nodeNum in extranksOnNode:
 			extranksOnNode[nodeNum] = []
@@ -362,6 +362,9 @@ def main(argv):
 					print(none_fmt % '-', end=' ')
 				print(' |  ', end='')
 		print()
+
+	for extrank in extranks:
+		files[extrank].close()
 
 			
 if __name__ == '__main__':
