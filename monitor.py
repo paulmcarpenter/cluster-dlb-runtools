@@ -118,12 +118,24 @@ fmt_no_value = {'alloc' : '%2s', 'enabled' : '%2s', 'busy' : '%4s', 'useful-busy
 			'promised' : '%4s', 'immovable' : '%4s', 'requests' : '%4s', 'requestacks' : '%4s', 'owned' : '%4s',
 			'lent' : '%4s', 'borrowed' : '%4s', '14' : '%4s', '15' : '%4s', '16' : '%4s'}
 
-def format_value(value, typ):
-	field = value[typ]
-	if typ in ['localtasks', 'totaltasks', 'promised', 'immovable']:
-		if False and field > 999:
-			return '>999'
-	formatted = fmt_spec[typ] % field
+fmt_desc = {'alloc' : 'Allocated cores (target number to own)',
+			'enabled' : 'Active owned cores (owned-lent+borrowed)',
+			'busy' : 'Busy cores',
+			'useful-busy' : 'Useful busy cores (running tasks)',
+			'localtasks' : 'Local ready tasks',
+			'totaltasks' : 'Total ready tasks on apprank',
+			'promised' : 'Promised tasks',
+			'immovable' : 'Immovable tasks (if(0), nooffload, sent to host scheduler)',
+			'requests' : 'Request messages',
+			'requestacks' : 'Request Ack messages',
+			'owned' : 'Owned cores (via DROM)',
+			'lent' : 'Lent cores (via LeWI)',
+			'borrowed' : 'Borrowed cores (via LeWI)',
+			'14' : '14 - reserved for debug',
+			'15' : '15 - reserved for debug',
+			'16' : '16 - reserved for debug'}
+
+def colour_value(formatted, typ):
 	if typ == 'alloc':
 		return red(formatted)
 	elif typ == 'enabled':
@@ -148,6 +160,14 @@ def format_value(value, typ):
 		return blue(formatted)
 	else:
 		return formatted
+	
+def format_value(value, typ):
+	field = value[typ]
+	if typ in ['localtasks', 'totaltasks', 'promised', 'immovable']:
+		if False and field > 999:
+			return '>999'
+	formatted = fmt_spec[typ] % field
+	return colour_value(formatted, typ)
 
 def no_value(typ):
 	return fmt_no_value[typ] % '#'
@@ -405,6 +425,13 @@ def main(argv):
 					print(' ', end='')
 				print(' |  ', end='')
 			print()
+
+	print()
+	print('Legend:')
+	for k,col in enumerate(cols):
+		desc = '%2d. %s' % (k, fmt_desc[col])
+		print(colour_value(desc, col))
+		
 
 	for extrank in extranks:
 		files[extrank].close()
