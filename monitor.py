@@ -101,7 +101,7 @@ def Usage():
 	print( ' --busy                  Show busy #cores')
 	print( ' --useful-busy           Show useful busy #cores')
 	print( ' --localtasks            Show local ready tasks')
-	print( ' --totaltasks            Show total ready tasks in group')
+	print( ' --totaltasks            Show total ready tasks in apprank')
 	print( ' --promised              Show local num. promised tasks')
 	print( ' --immovable             Show local num. immovable tasks')
 	return 1
@@ -264,17 +264,17 @@ def main(argv):
 	# print
 
 	# for node in range(0, numNodes):
-	# 	for group in range(0, maxGroup):
-	# 		if (group,node) in gn:
-	# 			print empty_fmt % ('g%d' % group),
+	# 	for apprank in range(0, maxGroup):
+	# 		if (apprank,node) in gn:
+	# 			print empty_fmt % ('g%d' % apprank),
 	# 		else:
 	# 			print none_fmt  % '',
 	# 	print ' | ',
 	# print
 	# for node in range(0, numNodes):
-	# 	for group in range(0, maxGroup):
-	# 		if (group,node) in gn:
-	# 			print empty_fmt  % ('e%d' % gn[(group,node)]),
+	# 	for apprank in range(0, maxGroup):
+	# 		if (apprank,node) in gn:
+	# 			print empty_fmt  % ('e%d' % gn[(apprank,node)]),
 	# 		else:
 	# 			print none_fmt  % '',
 	# 	print ' | ',
@@ -342,9 +342,9 @@ def main(argv):
 
 		if num_valid > 0:
 			if order_by == 'node':
-				extranks_pr = [  [gn[(group,node)] for group in range(0,maxGroup) if (group,node) in gn] for node in range(0, numNodes) ]
+				extranks_pr = [  [gn[(apprank,node)] for apprank in range(0,maxGroup) if (apprank,node) in gn] for node in range(0, numNodes) ]
 			elif order_by == 'vrank':
-				extranks_pr = [  [gn[(group,node)] for node in range(0,numNodes) if (group,node) in gn] for group in range(0,maxGroup) ]
+				extranks_pr = [  [gn[(apprank,node)] for node in range(0,numNodes) if (apprank,node) in gn] for apprank in range(0,maxGroup) ]
 			else:
 				assert false
 
