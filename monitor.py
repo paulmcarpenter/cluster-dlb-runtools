@@ -240,7 +240,7 @@ def main(argv):
 	for mapfile in mapfiles:
 		f = open('.hybrid/' + mapfile, 'r')
 		extrank = read_map_entry('externalRank', f.readline())
-		groupNum = read_map_entry('groupNum', f.readline())
+		apprankNum = read_map_entry('apprankNum', f.readline())
 		internalRank = read_map_entry('internalRank', f.readline())
 		nodeNum = read_map_entry('nodeNum', f.readline())
 
@@ -248,9 +248,9 @@ def main(argv):
 			extranksOnNode[nodeNum] = []
 		extranksOnNode[nodeNum].append(extrank)
 		extranks.append(extrank)
-		assert not (groupNum, nodeNum) in gn
-		gn[(groupNum, nodeNum)] = extrank
-		maxGroup = max(maxGroup, groupNum+1)
+		assert not (apprankNum, nodeNum) in gn
+		gn[(apprankNum, nodeNum)] = extrank
+		maxGroup = max(maxGroup, apprankNum+1)
 
 	numNodes = max(extranksOnNode.keys()) + 1
 
