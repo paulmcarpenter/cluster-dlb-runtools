@@ -110,6 +110,10 @@ fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'useful-busy' 
 			'promised' : '%4d', 'immovable' : '%4d', 'requests' : '%4d', 'requestacks' : '%4d', 'owned' : '%4d',
 			'lent' : '%4d', 'borrowed' : '%4d', '14' : '%4.1f', '15' : '%4.1f', '16' : '%4.1f'}
 
+fmt_width = {'alloc' : 2, 'enabled' : 2, 'busy' : 4, 'useful-busy' : 4, 'localtasks' : 4, 'totaltasks' : 4,
+			'promised' : 4, 'immovable' : 4, 'requests' : 4, 'requestacks' : 4, 'owned' : 4,
+			'lent' : 4, 'borrowed' : 4, '14' : 4, '15' : 4, '16' : 4}
+
 fmt_no_value = {'alloc' : '%2s', 'enabled' : '%2s', 'busy' : '%4s', 'useful-busy' : '%4s', 'localtasks' : '%4s', 'totaltasks' : '%4s',
 			'promised' : '%4s', 'immovable' : '%4s', 'requests' : '%4s', 'requestacks' : '%4s', 'owned' : '%4s',
 			'lent' : '%4s', 'borrowed' : '%4s', '14' : '%4s', '15' : '%4s', '16' : '%4s'}
@@ -148,8 +152,6 @@ def format_value(value, typ):
 def no_value(typ):
 	return fmt_no_value[typ] % '#'
 
-fmt_width = {'alloc': 2, 'enabled': 2, 'busy': 5, 'useful-busy': 5, 'localtasks' : 4, 'totaltasks' : 4, 'promised' : 4, 'immovable' : 4, 
-			'requests' : 4, 'requestacks' : 4, 'owned' : 4, 'lent' : 4, 'borrowed' : 4, '14' : 4, '15' : 4, '16' : 4}
 def main(argv): 
 	cols = []
 	squash = True
@@ -233,6 +235,8 @@ def main(argv):
 
 	extranksOnNode = {}
 	extranks = []
+	extrankNode = {}
+	extrankApprank = {}
 	gn = {}
 	maxGroup = 0
 
@@ -248,6 +252,8 @@ def main(argv):
 			extranksOnNode[nodeNum] = []
 		extranksOnNode[nodeNum].append(extrank)
 		extranks.append(extrank)
+		extrankNode[extrank] = nodeNum
+		extrankApprank[extrank] = apprankNum
 		assert not (apprankNum, nodeNum) in gn
 		gn[(apprankNum, nodeNum)] = extrank
 		maxGroup = max(maxGroup, apprankNum+1)
@@ -257,6 +263,52 @@ def main(argv):
 	files = {}
 	for extrank in extranks:
 		files[extrank] = open('.hybrid/utilization%d' % extrank, 'r')
+
+	if order_by == 'node':
+		extranks_pr = [  [gn[(apprank,node)] for apprank in range(0,maxGroup) if (apprank,node) in gn] for node in range(0, numNodes) ]
+	elif order_by == 'vrank':
+		extranks_pr = [  [gn[(apprank,node)] for node in range(0,numNodes) if (apprank,node) in gn] for apprank in range(0,maxGroup) ]
+	else:
+		assert false
+
+	width_per_extrank = sum([fmt_width[col]+1 for col in cols])+1
+	# Header line 1
+	if print_timestamp:
+		print('%5s ' % '', end='')
+	for k,extranks1 in enumerate(extranks_pr):
+		if order_by == 'node':
+			desc = 'Node %d' % k
+		else:
+			desc = 'Apprank %d' % k
+		total_width = width_per_extrank * len(extranks1)
+		print( desc.center(total_width) + ' | ', end = ' ')
+	print()
+	# Header line 2
+	if print_timestamp:
+		print('%5s ' % '', end='')
+	for k,extranks1 in enumerate(extranks_pr):
+		for extrank in extranks1:
+			if order_by == 'node':
+				desc = 'a%d' % extrankApprank[extrank]
+			else:
+				desc = 'n%d' % extrankNode[extrank]
+			print( desc.center(width_per_extrank), end = '')
+		print(' | ', end = ' ')
+	print()
+
+	#for extranks1 in extranks_pr:
+	#	for extrank in extranks1:
+	#		#print '%2d %4.1f ' % (local_alloc[extrank], busy[extrank]),
+	#		if extrank in values:
+	#			for col in cols:
+	#				print(format_value(values[extrank], col), end=' ')
+	#		else:
+	#			for col in cols:
+	#				print(no_value(col), end=' ')
+	#		print(' ', end='')
+	#	else:
+	#		print(none_fmt % '-', end=' ')
+	#	print(' |  ', end='')
 
 	# for node in range(0, numNodes):
 	# 	fmt = '%' + str((empty_fmt_width+1) * maxGroup) + 's'
@@ -337,16 +389,9 @@ def main(argv):
 		if (linenum % subsample) != 0:
 			continue
 
-		if print_timestamp:
-			print('%5.1f ' % curr_timestamp, end='')
-
 		if num_valid > 0:
-			if order_by == 'node':
-				extranks_pr = [  [gn[(apprank,node)] for apprank in range(0,maxGroup) if (apprank,node) in gn] for node in range(0, numNodes) ]
-			elif order_by == 'vrank':
-				extranks_pr = [  [gn[(apprank,node)] for node in range(0,numNodes) if (apprank,node) in gn] for apprank in range(0,maxGroup) ]
-			else:
-				assert false
+			if print_timestamp:
+				print('%5.1f ' % curr_timestamp, end='')
 
 			for extranks1 in extranks_pr:
 				for extrank in extranks1:
@@ -358,10 +403,8 @@ def main(argv):
 						for col in cols:
 							print(no_value(col), end=' ')
 					print(' ', end='')
-				else:
-					print(none_fmt % '-', end=' ')
 				print(' |  ', end='')
-		print()
+			print()
 
 	for extrank in extranks:
 		files[extrank].close()
