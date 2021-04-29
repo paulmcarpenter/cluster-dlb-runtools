@@ -108,7 +108,7 @@ def Usage():
 	print( './monitor.py <options>')
 	print( 'where:')
 	print( ' -h                      Show this help')
-	print( ' --order-by vrank/node   Group by vrank or node (default vrank)')
+	print( ' --order-by apprank/node Group by apprank or node (default apprank)')
 	print( ' --alloc                 Show allocated #cores')
 	print( ' --enabled               Show active owned #cores from DLB')
 	print( ' --owned                 Show owned #cores from DLB')
@@ -120,7 +120,7 @@ def Usage():
 	print( ' --promised              Show local num. promised tasks')
 	print( ' --immovable             Show local num. immovable tasks')
 	print( ' --14,--15,...,--19      Show numbered fields reserved for debug')
-	print( ' --appranks l            List of appranks (use with order-by vrank)')
+	print( ' --appranks l            List of appranks (use with order-by apprank)')
 	print( ' --nodes l               List of nodes (use with order-by node)')
 	return 1
 
@@ -201,7 +201,7 @@ def main(argv):
 	cols = []
 	squash = True
 	print_timestamp = True
-	order_by = 'vrank'  # 'vrank' or 'node'
+	order_by = 'apprank'  # 'apprank' or 'node'
 	follow = False
 	subsample = 1
 	show_appranks = None
@@ -275,9 +275,9 @@ def main(argv):
 			show_nodes = read_appranks_or_nodes(a)
 		elif o == '--order-by':
 			order_by = a
-			if not order_by in ['node', 'vrank']:
+			if not order_by in ['node', 'apprank']:
 				print(order_by)
-				print('Bad order-by: valid values are node, vrank')
+				print('Bad order-by: valid values are node, apprank')
 				return 1
 		else:
 			assert(False)
@@ -299,7 +299,7 @@ def main(argv):
 	extrankNode = {}
 	extrankApprank = {}
 	gn = {}
-	maxGroup = 0
+	maxApprank = 0
 
 	mapfiles = [f for f in os.listdir('.hybrid') if f.startswith('map')]
 	for mapfile in mapfiles:
@@ -317,7 +317,7 @@ def main(argv):
 		extrankApprank[extrank] = apprankNum
 		assert not (apprankNum, nodeNum) in gn
 		gn[(apprankNum, nodeNum)] = extrank
-		maxGroup = max(maxGroup, apprankNum+1)
+		maxApprank = max(maxApprank, apprankNum+1)
 
 	numNodes = max(extranksOnNode.keys()) + 1
 
@@ -336,16 +336,16 @@ def main(argv):
 				if n < 0 or n >= numNodes:
 					print('Node %d in --nodes is invalid\n', n)
 					return 1
-		extranks_pr = [  [gn[(apprank,node)] for apprank in range(0,maxGroup) if (apprank,node) in gn] for node in show_nodes ]
-	elif order_by == 'vrank':
+		extranks_pr = [  [gn[(apprank,node)] for apprank in range(0,maxApprank) if (apprank,node) in gn] for node in show_nodes ]
+	elif order_by == 'apprank':
 		if not show_nodes is None:
-			print('Cannot use --nodes with --order-by vrank\n')
+			print('Cannot use --nodes with --order-by apprank\n')
 			return 1
 		if show_appranks is None:
-			show_appranks = range(0,maxGroup)
+			show_appranks = range(0,maxApprank)
 		else:
 			for a in show_appranks:
-				if a < 0 or a >= maxGroup:
+				if a < 0 or a >= maxApprank:
 					print('Apprank %a in --appranks is invalid\n', a)
 					return 1
 		extranks_pr = [  [gn[(apprank,node)] for node in range(0,numNodes) if (apprank,node) in gn] for apprank in show_appranks ]
@@ -376,42 +376,6 @@ def main(argv):
 			print( desc.center(width_per_extrank), end = '')
 		print(' | ', end = ' ')
 	print()
-
-	#for extranks1 in extranks_pr:
-	#	for extrank in extranks1:
-	#		#print '%2d %4.1f ' % (local_alloc[extrank], busy[extrank]),
-	#		if extrank in values:
-	#			for col in cols:
-	#				print(format_value(values[extrank], col), end=' ')
-	#		else:
-	#			for col in cols:
-	#				print(no_value(col), end=' ')
-	#		print(' ', end='')
-	#	else:
-	#		print(none_fmt % '-', end=' ')
-	#	print(' |  ', end='')
-
-	# for node in range(0, numNodes):
-	# 	fmt = '%' + str((empty_fmt_width+1) * maxGroup) + 's'
-	# 	print fmt % ('node %d' % node), '| ',
-	# print
-
-	# for node in range(0, numNodes):
-	# 	for apprank in range(0, maxGroup):
-	# 		if (apprank,node) in gn:
-	# 			print empty_fmt % ('g%d' % apprank),
-	# 		else:
-	# 			print none_fmt  % '',
-	# 	print ' | ',
-	# print
-	# for node in range(0, numNodes):
-	# 	for apprank in range(0, maxGroup):
-	# 		if (apprank,node) in gn:
-	# 			print empty_fmt  % ('e%d' % gn[(apprank,node)]),
-	# 		else:
-	# 			print none_fmt  % '',
-	# 	print ' | ',
-	# print
 
 	readlogs = dict( [(extrank, ReadLog(files[extrank])) for extrank in extranks])
 
