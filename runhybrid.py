@@ -5,6 +5,7 @@ import os
 import time
 import getopt
 import re
+import check_num_nodes
 
 import topologies
 import runexperiment
@@ -166,13 +167,16 @@ def main(argv):
 			print('Choose policy --local or --global when using DLB')
 			return 1
 
-	if len(args) < 2:
+	if len(args) < 1:
 		return Usage()
-	nodes = int(args[0])
+	if not check_num_nodes.get_on_compute_node():
+		print('runhybrid.py can only be run on a compute node')
+		return 2
+	nodes = check_num_nodes.get_num_nodes()
 	if vranks is None:
 		vranks = nodes
 
-	runexperiment.init(' '.join(args[1:]), rebalance_arg_values)
+	runexperiment.init(' '.join(args), rebalance_arg_values)
 	
 	if runexperiment.params['use_dlb'] is True:
 		desc = topologies.get_topology(nodes, degree, vranks)
