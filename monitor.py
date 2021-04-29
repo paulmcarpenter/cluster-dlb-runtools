@@ -104,19 +104,23 @@ def Usage():
 	print( ' --totaltasks            Show total ready tasks in apprank')
 	print( ' --promised              Show local num. promised tasks')
 	print( ' --immovable             Show local num. immovable tasks')
+	print( ' --14,--15,...,--19      Show numbered fields reserved for debug')
 	return 1
 
 fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'useful-busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d',
 			'promised' : '%4d', 'immovable' : '%4d', 'requests' : '%4d', 'requestacks' : '%4d', 'owned' : '%4d',
-			'lent' : '%4d', 'borrowed' : '%4d', '14' : '%4.1f', '15' : '%4.1f', '16' : '%4.1f'}
+			'lent' : '%4d', 'borrowed' : '%4d', '14' : '%4.1f', '15' : '%4.1f', '16' : '%4.1f',
+			'17' : '%4.1f', '18' : '%4.1f', '19' : '%4.1f', '20' : '%4.1f'}
 
 fmt_width = {'alloc' : 2, 'enabled' : 2, 'busy' : 4, 'useful-busy' : 4, 'localtasks' : 4, 'totaltasks' : 4,
 			'promised' : 4, 'immovable' : 4, 'requests' : 4, 'requestacks' : 4, 'owned' : 4,
-			'lent' : 4, 'borrowed' : 4, '14' : 4, '15' : 4, '16' : 4}
+			'lent' : 4, 'borrowed' : 4, '14' : 4, '15' : 4, '16' : 4,
+			'17' : 4, '18' : 4, '19' : 4, '20' : 3}
 
 fmt_no_value = {'alloc' : '%2s', 'enabled' : '%2s', 'busy' : '%4s', 'useful-busy' : '%4s', 'localtasks' : '%4s', 'totaltasks' : '%4s',
 			'promised' : '%4s', 'immovable' : '%4s', 'requests' : '%4s', 'requestacks' : '%4s', 'owned' : '%4s',
-			'lent' : '%4s', 'borrowed' : '%4s', '14' : '%4s', '15' : '%4s', '16' : '%4s'}
+			'lent' : '%4s', 'borrowed' : '%4s', '14' : '%4s', '15' : '%4s', '16' : '%4s',
+			'17' : '%4s', '18' : '%4s', '19' : '%4s', '20' : '%4s'}
 
 fmt_desc = {'alloc' : 'Allocated cores (target number to own)',
 			'enabled' : 'Active owned cores (owned-lent+borrowed)',
@@ -133,7 +137,11 @@ fmt_desc = {'alloc' : 'Allocated cores (target number to own)',
 			'borrowed' : 'Borrowed cores (via LeWI)',
 			'14' : '14 - reserved for debug',
 			'15' : '15 - reserved for debug',
-			'16' : '16 - reserved for debug'}
+			'16' : '16 - reserved for debug',
+			'17' : '17 - reserved for debug',
+			'18' : '18 - reserved for debug',
+			'19' : '19 - reserved for debug',
+			'20' : '20 - reserved for debug'}
 
 def colour_value(formatted, typ):
 	if typ == 'alloc':
@@ -187,7 +195,8 @@ def main(argv):
 										  'localtasks', 'totaltasks',
 										  'promised', 'immovable',
 										  'requests', 'requestacks',
-										  'owned', 'lent', 'borrowed', '14', '15',  '16', 'follow',
+										  'owned', 'lent', 'borrowed', '14', '15',  '16', '17', '18', '19', '20',
+										  'follow',
 										  'subsample='] )
 
 	except getopt.error as msg:
@@ -231,6 +240,14 @@ def main(argv):
 			cols.append('15')
 		elif o == '--16':
 			cols.append('16')
+		elif o == '--17':
+			cols.append('17')
+		elif o == '--18':
+			cols.append('18')
+		elif o == '--19':
+			cols.append('19')
+		elif o == '--20':
+			cols.append('20')
 		elif o == '--subsample':
 			subsample = int(a)
 		elif o == '--order-by':
@@ -397,12 +414,11 @@ def main(argv):
 				values[extrank]['owned'] = int(s[11])
 				values[extrank]['lent'] = int(s[12])
 				values[extrank]['borrowed'] = int(s[13])
-				if len(s) >= 15:
-					values[extrank]['14'] = float(s[14])
-				if len(s) >= 16:
-					values[extrank]['15'] = float(s[15])
-				if len(s) >= 17:
-					values[extrank]['16'] = float(s[16])
+				# Collect all other fields in numbered field for debug
+				idx = 14
+				while len(s) >= idx+1:
+					values[extrank][str(idx)] = float(s[idx])
+					idx += 1
 
 		curr_timestamp += 0.5
 
