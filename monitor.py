@@ -4,11 +4,26 @@ import os
 import sys
 import time
 import getopt
+import re
 
 use_colours = True
 if not sys.stdout.isatty():
 	use_colours = False
 
+def read_appranks_or_nodes(s):
+	ll = s.split(',')
+	vv = []
+	for l in ll:
+		m = re.match('([0-9][0-9]*)-([0-9][0-9]*)', l)
+		if m:
+			first = int(m.group(1))
+			last = int(m.group(2))
+			for e in range(first,last+1):
+				vv.append(e)
+		else:
+			vv.append(int(l))
+	return vv
+		
 
 def black(s):
     return s
@@ -93,7 +108,7 @@ def Usage():
 	print( './monitor.py <options>')
 	print( 'where:')
 	print( ' -h                      Show this help')
-	print( ' --order-by vrank/node   Group by vrank or node')
+	print( ' --order-by vrank/node   Group by vrank or node (default vrank)')
 	print( ' --alloc                 Show allocated #cores')
 	print( ' --enabled               Show active owned #cores from DLB')
 	print( ' --owned                 Show owned #cores from DLB')
@@ -105,6 +120,8 @@ def Usage():
 	print( ' --promised              Show local num. promised tasks')
 	print( ' --immovable             Show local num. immovable tasks')
 	print( ' --14,--15,...,--19      Show numbered fields reserved for debug')
+	print( ' --appranks l            List of appranks (use with order-by vrank)')
+	print( ' --nodes l               List of nodes (use with order-by node)')
 	return 1
 
 fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'useful-busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d',
@@ -187,6 +204,8 @@ def main(argv):
 	order_by = 'vrank'  # 'vrank' or 'node'
 	follow = False
 	subsample = 1
+	show_appranks = None
+	show_nodes = None
 
 	try:
 		opts, args = getopt.getopt( argv[1:],
@@ -197,7 +216,7 @@ def main(argv):
 										  'requests', 'requestacks',
 										  'owned', 'lent', 'borrowed', '14', '15',  '16', '17', '18', '19', '20',
 										  'follow',
-										  'subsample='] )
+										  'subsample=', 'appranks=', 'nodes='] )
 
 	except getopt.error as msg:
 		print(msg)
@@ -250,6 +269,10 @@ def main(argv):
 			cols.append('20')
 		elif o == '--subsample':
 			subsample = int(a)
+		elif o == '--appranks':
+			show_appranks = read_appranks_or_nodes(a)
+		elif o == '--nodes':
+			show_nodes = read_appranks_or_nodes(a)
 		elif o == '--order-by':
 			order_by = a
 			if not order_by in ['node', 'vrank']:
@@ -258,6 +281,7 @@ def main(argv):
 				return 1
 		else:
 			assert(False)
+
 	
 	if len(cols) == 0:
 		cols = ['alloc', 'enabled', 'busy']
@@ -302,9 +326,29 @@ def main(argv):
 		files[extrank] = open('.hybrid/utilization%d' % extrank, 'r')
 
 	if order_by == 'node':
-		extranks_pr = [  [gn[(apprank,node)] for apprank in range(0,maxGroup) if (apprank,node) in gn] for node in range(0, numNodes) ]
+		if not show_appranks is None:
+			print('Cannot use --appranks with --order-by node\n')
+			return 1
+		if show_nodes is None:
+			show_nodes = range(0,numNodes)
+		else:
+			for n in show_nodes:
+				if n < 0 or n >= numNodes:
+					print('Node %d in --nodes is invalid\n', n)
+					return 1
+		extranks_pr = [  [gn[(apprank,node)] for apprank in range(0,maxGroup) if (apprank,node) in gn] for node in show_nodes ]
 	elif order_by == 'vrank':
-		extranks_pr = [  [gn[(apprank,node)] for node in range(0,numNodes) if (apprank,node) in gn] for apprank in range(0,maxGroup) ]
+		if not show_nodes is None:
+			print('Cannot use --nodes with --order-by vrank\n')
+			return 1
+		if show_appranks is None:
+			show_appranks = range(0,maxGroup)
+		else:
+			for a in show_appranks:
+				if a < 0 or a >= maxGroup:
+					print('Apprank %a in --appranks is invalid\n', a)
+					return 1
+		extranks_pr = [  [gn[(apprank,node)] for node in range(0,numNodes) if (apprank,node) in gn] for apprank in show_appranks ]
 	else:
 		assert false
 
