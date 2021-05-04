@@ -10,6 +10,10 @@ use_colours = True
 if not sys.stdout.isatty():
 	use_colours = False
 
+# Allow --14 up to --30 (depending on value of {max,max}_numbered_field)
+min_numbered_field = 14
+max_numbered_field = 30
+
 def read_appranks_or_nodes(s):
 	ll = s.split(',')
 	vv = []
@@ -119,25 +123,23 @@ def Usage():
 	print( ' --totaltasks            Show total ready tasks in apprank')
 	print( ' --promised              Show local num. promised tasks')
 	print( ' --immovable             Show local num. immovable tasks')
-	print( ' --14,--15,...,--19      Show numbered fields reserved for debug')
+	print( ' --%d,--%d,...,--%d      Show numbered fields reserved for debug' % \
+			(min_numbered_field, min_numbered_field+1, max_numbered_field) )
 	print( ' --appranks l            List of appranks (use with order-by apprank)')
 	print( ' --nodes l               List of nodes (use with order-by node)')
 	return 1
 
 fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'useful-busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d',
 			'promised' : '%4d', 'immovable' : '%4d', 'requests' : '%4d', 'requestacks' : '%4d', 'owned' : '%4d',
-			'lent' : '%4d', 'borrowed' : '%4d', '14' : '%4.1f', '15' : '%4.1f', '16' : '%4.1f',
-			'17' : '%4.1f', '18' : '%4.1f', '19' : '%4.1f', '20' : '%4.1f'}
+			'lent' : '%4d', 'borrowed' : '%4d'}
 
 fmt_width = {'alloc' : 2, 'enabled' : 2, 'busy' : 4, 'useful-busy' : 4, 'localtasks' : 4, 'totaltasks' : 4,
 			'promised' : 4, 'immovable' : 4, 'requests' : 4, 'requestacks' : 4, 'owned' : 4,
-			'lent' : 4, 'borrowed' : 4, '14' : 4, '15' : 4, '16' : 4,
-			'17' : 4, '18' : 4, '19' : 4, '20' : 3}
+			'lent' : 4, 'borrowed' : 4}
 
 fmt_no_value = {'alloc' : '%2s', 'enabled' : '%2s', 'busy' : '%4s', 'useful-busy' : '%4s', 'localtasks' : '%4s', 'totaltasks' : '%4s',
 			'promised' : '%4s', 'immovable' : '%4s', 'requests' : '%4s', 'requestacks' : '%4s', 'owned' : '%4s',
-			'lent' : '%4s', 'borrowed' : '%4s', '14' : '%4s', '15' : '%4s', '16' : '%4s',
-			'17' : '%4s', '18' : '%4s', '19' : '%4s', '20' : '%4s'}
+			'lent' : '%4s', 'borrowed' : '%4s'}
 
 fmt_desc = {'alloc' : 'Allocated cores (target number to own)',
 			'enabled' : 'Active owned cores (owned-lent+borrowed)',
@@ -151,14 +153,13 @@ fmt_desc = {'alloc' : 'Allocated cores (target number to own)',
 			'requestacks' : 'Request Ack messages',
 			'owned' : 'Owned cores (via DROM)',
 			'lent' : 'Lent cores (via LeWI)',
-			'borrowed' : 'Borrowed cores (via LeWI)',
-			'14' : '14 - reserved for debug',
-			'15' : '15 - reserved for debug',
-			'16' : '16 - reserved for debug',
-			'17' : '17 - reserved for debug',
-			'18' : '18 - reserved for debug',
-			'19' : '19 - reserved for debug',
-			'20' : '20 - reserved for debug'}
+			'borrowed' : 'Borrowed cores (via LeWI)'}
+
+for f in range(min_numbered_field, max_numbered_field+1):
+	fmt_spec[str(f)] = '%4.1f'
+	fmt_width[str(f)] = 4
+	fmt_no_value[str(f)] = '%4s'
+	fmt_desc[str(f)] = '%d - reserved for debug' % f
 
 def colour_value(formatted, typ):
 	if typ == 'alloc':
@@ -197,6 +198,11 @@ def format_value(value, typ):
 def no_value(typ):
 	return fmt_no_value[typ] % '#'
 
+def is_number_option(o):
+	# Recognise numbered options, e.g. --14, --15, ...
+	m = re.match('--[0-9][0-9]*', o)
+	return not m is None
+
 def main(argv): 
 	cols = []
 	squash = True
@@ -208,15 +214,17 @@ def main(argv):
 	show_nodes = None
 
 	try:
+		numbered_opts = [str(f) for f in range(min_numbered_field, max_numbered_field+1) ]
+
 		opts, args = getopt.getopt( argv[1:],
 									'hf', ['help', 'order-by=',
 										  'alloc', 'enabled', 'busy', 'useful-busy',
 										  'localtasks', 'totaltasks',
 										  'promised', 'immovable',
 										  'requests', 'requestacks',
-										  'owned', 'lent', 'borrowed', '14', '15',  '16', '17', '18', '19', '20',
+										  'owned', 'lent', 'borrowed',
 										  'follow',
-										  'subsample=', 'appranks=', 'nodes='] )
+										  'subsample=', 'appranks=', 'nodes='] + numbered_opts)
 
 	except getopt.error as msg:
 		print(msg)
@@ -253,20 +261,6 @@ def main(argv):
 			cols.append('lent')
 		elif o == '--borrowed':
 			cols.append('borrowed')
-		elif o == '--14':
-			cols.append('14')
-		elif o == '--15':
-			cols.append('15')
-		elif o == '--16':
-			cols.append('16')
-		elif o == '--17':
-			cols.append('17')
-		elif o == '--18':
-			cols.append('18')
-		elif o == '--19':
-			cols.append('19')
-		elif o == '--20':
-			cols.append('20')
 		elif o == '--subsample':
 			subsample = int(a)
 		elif o == '--appranks':
@@ -279,6 +273,8 @@ def main(argv):
 				print(order_by)
 				print('Bad order-by: valid values are node, apprank')
 				return 1
+		elif is_number_option(o):
+			cols.append(o[2:])
 		else:
 			assert(False)
 
