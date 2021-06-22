@@ -36,6 +36,7 @@ def Usage():
 	print(' --preload-prefix        Libraries (colon separated) to prefix if using Extrae')
 	print('                         with LD_PRELOAD, e.g. for ASan')
 	print(' --discard-trace         Do not keep the Extrae trace')
+	print(' --hybrid-directory      Hybrid directory, normally .hybrid')
 	print('Options forwarded to rebalance.py:')
 	print('\n'.join([' --%s' % name for (name,has_arg,shortname) in runexperiment.rebalance_forwarded_opts]))
 	return 1
@@ -73,7 +74,7 @@ def main(argv):
 										  'continue-after-error', 'no-dlb',
 										  'local-period=', 'trace-suffix=', 'debug=',
 										  'enable-drom=', 'enable-lewi=', 'config-override=',
-										  'keep-set-0', 'keep', 'preload-prefix=', 'discard-trace'] + rebalance_getopt)
+										  'keep-set-0', 'keep', 'preload-prefix=', 'discard-trace', 'hybrid-directory='] + rebalance_getopt)
 
 	except getopt.error as msg:
 		print(msg)
@@ -140,6 +141,8 @@ def main(argv):
 			runexperiment.set_param('preload_prefix', a)
 		elif o == '--discard-trace':
 			runexperiment.set_param('discard_trace', True)
+		elif o == '--hybrid-directory':
+			runexperiment.set_param('hybrid_directory', a)
 		else:
 			try:
 				options = ['--' + name for (name, has_arg, shortname) in runexperiment.rebalance_forwarded_opts]

@@ -39,7 +39,8 @@ params = {'use_dlb' : True,
 		  'keep' : False,
 		  'config_override' : None,
 		  'preload_prefix' : None,
-		  'discard_trace' : False}
+		  'discard_trace' : False,
+		  'hybrid_directory' : None}
 
 nanos6_override_prefix = {}
 
@@ -120,6 +121,8 @@ def init(cmd, rebalance_arg_values):
 	if params['use_hybrid']:
 		add_override_prefix('dlb.enable_drom', 'true' if params['enable_drom'] else 'false')
 		add_override_prefix('dlb.enable_lewi', 'true' if params['enable_lewi'] else 'false')
+		if not params['hybrid_directory'] is None:
+			add_override_prefix('cluster.hybrid.directory', params['hybrid_directory'])
 
 	if params['extrae_preload'] and params['instrumentation'] == 'extrae':
 		if not 'EXTRAE_HOME' in os.environ:
