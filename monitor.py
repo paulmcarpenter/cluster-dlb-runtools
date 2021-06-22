@@ -203,6 +203,14 @@ def is_number_option(o):
 	m = re.match('--[0-9][0-9]*', o)
 	return not m is None
 
+def find_hybrid_dir():
+	if os.path.exists('.hybrid'):
+		return '.hybrid'
+	if os.path.exists('map0') and os.path.exists('utilization0'):
+		return '.'
+	print('Cannot find hybrid directory: not .hybrid or .')
+	sys.exit(1)
+
 def main(argv): 
 	cols = []
 	squash = True
@@ -212,6 +220,7 @@ def main(argv):
 	subsample = 1
 	show_appranks = None
 	show_nodes = None
+	hybrid_dir = find_hybrid_dir()
 
 	try:
 		numbered_opts = [str(f) for f in range(min_numbered_field, max_numbered_field+1) ]
@@ -297,9 +306,9 @@ def main(argv):
 	gn = {}
 	maxApprank = 0
 
-	mapfiles = [f for f in os.listdir('.hybrid') if f.startswith('map')]
+	mapfiles = [f for f in os.listdir(hybrid_dir) if f.startswith('map')]
 	for mapfile in mapfiles:
-		with open('.hybrid/' + mapfile, 'r') as f:
+		with open(hybrid_dir + '/' + mapfile, 'r') as f:
 			extrank = read_map_entry('externalRank', f.readline())
 			apprankNum = read_map_entry('apprankNum', f.readline())
 			internalRank = read_map_entry('internalRank', f.readline())
@@ -319,7 +328,7 @@ def main(argv):
 
 	files = {}
 	for extrank in extranks:
-		files[extrank] = open('.hybrid/utilization%d' % extrank, 'r')
+		files[extrank] = open(hybrid_dir + '/utilization%d' % extrank, 'r')
 
 	if order_by == 'node':
 		if not show_appranks is None:
