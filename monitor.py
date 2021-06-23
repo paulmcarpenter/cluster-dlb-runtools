@@ -112,6 +112,7 @@ def Usage():
 	print( './monitor.py <options>')
 	print( 'where:')
 	print( ' -h                      Show this help')
+	print( ' -f, --follow            Continuous output while program runs')
 	print( ' --order-by apprank/node Group by apprank or node (default apprank)')
 	print( ' --alloc                 Show allocated #cores')
 	print( ' --enabled               Show active owned #cores from DLB')
