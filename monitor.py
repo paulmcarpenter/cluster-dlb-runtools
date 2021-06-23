@@ -83,10 +83,15 @@ class ReadLog:
 		self._fp = fp
 		self._splitline = None
 		self._timestamp = None
+		self.done = False
 	
 	def try_read_next(self):
 		line = self._fp.readline()
-		if line == '':
+		if line.startswith('DONE'):
+			self.done = True
+			self._splitline = None
+			self._timestamp = None
+		elif line == '':
 			self._splitline = None
 			self._timestamp = None
 		else:
@@ -399,6 +404,9 @@ def main(argv):
 			# Get current line from all
 			s = None
 			while True:
+				if readlogs[extrank].done:
+					done = True
+					break
 				if readlogs[extrank].timestamp() is None:
 					if not follow:
 						done = True
