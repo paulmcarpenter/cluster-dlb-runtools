@@ -190,6 +190,9 @@ def run_experiment(nodes, deg, vranks, desc):
 	elif policy =='no-rebalance':
 		hybrid_policy = 'global' # Global policy
 		rebalance = False # but don't actually rebalance
+		print('Prefer --loads to --no-rebalance: --no-rebalance will reduce DROM allocation to 1 core per')
+		print('rank. The other cores will not be owned and therefore not available to LeWI either')
+		sys.exit(1)
 	else:
 		assert policy is None
 		assert not params['use_hybrid']
