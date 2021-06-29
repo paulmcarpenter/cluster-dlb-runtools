@@ -27,7 +27,6 @@ def Usage():
 	print(' --no-extrae-as-threads  Unset instrument.extrae.as_threads=false')
 	print(' --debug true/false      Enable or disable debug mode')
 	print(' --trace-suffix s        Suffix for trace directory and filename')
-	print(' --continue-after-error  To try to find more errors')
 	print(' --enable-drom val       Enable or disable DROM (val=true/false)')
 	print(' --enable-lewi val       Enable or disable LeWI (val=true/false)')
 	print(' --config-override s     Strings to put in config override')
@@ -55,7 +54,6 @@ def main(argv):
 
 	degree = 1
 	vranks = None
-	continue_after_error = False
 	policy = None
 	extrae_as_threads = False
 
@@ -71,7 +69,7 @@ def main(argv):
 										  'local', 'global', 'extrae', 'verbose', 'instrumentation=',
 										  'extrae-preload', 'extrae-as-threads',
 										  'no-extrae-as-threads', 'no-rebalance',
-										  'continue-after-error', 'no-dlb',
+										  'no-dlb',
 										  'local-period=', 'trace-suffix=', 'debug=',
 										  'enable-drom=', 'enable-lewi=', 'config-override=',
 										  'keep-set-0', 'keep', 'preload-prefix=', 'discard-trace', 'hybrid-directory='] + rebalance_getopt)
@@ -117,8 +115,6 @@ def main(argv):
 			extrae_as_threads = True
 		elif o == '--no-extrae-as-threads':
 			extrae_as_threads = False
-		elif o == '--continue-after-error':
-			continue_after_error = True
 		elif o == '--no-dlb':
 			runexperiment.params['use_dlb'] = False
 		elif o == '--local-period':
@@ -190,7 +186,7 @@ def main(argv):
 	runexperiment.set_param('extrae_as_threads', extrae_as_threads)
 
 	retval = runexperiment.run_experiment(nodes, degree, vranks, desc)
-	if retval != 0 and (not continue_after_error):
+	if retval != 0:
 		return 1
 
 	time.sleep(1)
