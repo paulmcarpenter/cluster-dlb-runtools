@@ -40,7 +40,8 @@ params = {'use_dlb' : True,
 		  'config_override' : None,
 		  'preload_prefix' : None,
 		  'discard_trace' : False,
-		  'hybrid_directory' : None}
+		  'hybrid_directory' : None,
+		  'dry_run' : False}
 
 nanos6_override_prefix = {}
 
@@ -87,7 +88,10 @@ def find_paraver_file():
 def do_cmd(s):
 	print(s)
 	sys.stdout.flush()
-	return os.system(s)
+	if not params['dry_run']:
+		return os.system(s)
+	else:
+		return 0
 
 def translate(string, d):
 	s = ''
