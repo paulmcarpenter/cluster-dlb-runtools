@@ -191,6 +191,9 @@ def main(argv):
 	runexperiment.init(' '.join(args), rebalance_arg_values)
 	
 	if runexperiment.params['use_dlb'] is True:
+		if degree > nodes:
+			print(f'Cannot run with degree > #nodes ({degree} > {nodes})\n')
+			return 2
 		desc = topologies.get_topology(nodes, degree, vranks)
 	else:
 		desc = ''
