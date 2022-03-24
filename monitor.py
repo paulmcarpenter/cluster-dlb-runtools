@@ -127,7 +127,7 @@ def Usage():
 	print( ' --useful-busy           Show useful busy #cores')
 	print( ' --localtasks            Show local ready tasks')
 	print( ' --totaltasks            Show total ready tasks in apprank')
-	print( ' --promised              Show local num. promised tasks')
+	print( ' --apprankbusy           Show total apprank busy cores')
 	print( ' --immovable             Show local num. immovable tasks')
 	print( ' --%d,--%d,...,--%d      Show numbered fields reserved for debug' % \
 			(min_numbered_field, min_numbered_field+1, max_numbered_field) )
@@ -136,15 +136,15 @@ def Usage():
 	return 1
 
 fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'useful-busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d',
-			'promised' : '%4d', 'immovable' : '%4d', 'requests' : '%4d', 'requestacks' : '%4d', 'owned' : '%4d',
+			'apprankbusy' : '%4.1f', 'immovable' : '%4d', 'requests' : '%4d', 'requestacks' : '%4d', 'owned' : '%4d',
 			'lent' : '%4d', 'borrowed' : '%4d'}
 
 fmt_width = {'alloc' : 2, 'enabled' : 2, 'busy' : 4, 'useful-busy' : 4, 'localtasks' : 4, 'totaltasks' : 4,
-			'promised' : 4, 'immovable' : 4, 'requests' : 4, 'requestacks' : 4, 'owned' : 4,
+			'apprankbusy' : 4, 'immovable' : 4, 'requests' : 4, 'requestacks' : 4, 'owned' : 4,
 			'lent' : 4, 'borrowed' : 4}
 
 fmt_no_value = {'alloc' : '%2s', 'enabled' : '%2s', 'busy' : '%4s', 'useful-busy' : '%4s', 'localtasks' : '%4s', 'totaltasks' : '%4s',
-			'promised' : '%4s', 'immovable' : '%4s', 'requests' : '%4s', 'requestacks' : '%4s', 'owned' : '%4s',
+			'apprankbusy' : '%4s', 'immovable' : '%4s', 'requests' : '%4s', 'requestacks' : '%4s', 'owned' : '%4s',
 			'lent' : '%4s', 'borrowed' : '%4s'}
 
 fmt_desc = {'alloc' : 'Allocated cores (target number to own)',
@@ -153,7 +153,7 @@ fmt_desc = {'alloc' : 'Allocated cores (target number to own)',
 			'useful-busy' : 'Useful busy cores (running tasks)',
 			'localtasks' : 'Local ready tasks',
 			'totaltasks' : 'Total ready tasks on apprank',
-			'promised' : 'Promised tasks',
+			'apprankbusy' : 'Busy cores on apprank',
 			'immovable' : 'Immovable tasks (if(0), nooffload, sent to host scheduler)',
 			'requests' : 'Request messages',
 			'requestacks' : 'Request Ack messages',
@@ -235,7 +235,7 @@ def main(argv):
 									'hf', ['help', 'order-by=',
 										  'alloc', 'enabled', 'busy', 'useful-busy',
 										  'localtasks', 'totaltasks',
-										  'promised', 'immovable',
+										  'apprankbusy', 'immovable',
 										  'requests', 'requestacks',
 										  'owned', 'lent', 'borrowed',
 										  'follow',
@@ -262,8 +262,8 @@ def main(argv):
 			cols.append('localtasks')
 		elif o == '--totaltasks':
 			cols.append('totaltasks')
-		elif o == '--promised':
-			cols.append('promised')
+		elif o == '--apprankbusy':
+			cols.append('apprankbusy')
 		elif o == '--immovable':
 			cols.append('immovable')
 		elif o == '--requests':
@@ -429,7 +429,7 @@ def main(argv):
 				values[extrank]['useful-busy'] = float(s[4])
 				values[extrank]['localtasks'] = int(s[5])
 				values[extrank]['totaltasks'] = int(s[6])
-				values[extrank]['promised'] = int(s[7])
+				values[extrank]['apprankbusy'] = int(s[7])
 				values[extrank]['immovable'] = int(s[8])
 				values[extrank]['requests'] = int(s[9])
 				values[extrank]['requestacks'] = int(s[10])
