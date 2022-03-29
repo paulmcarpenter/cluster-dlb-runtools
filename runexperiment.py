@@ -298,7 +298,10 @@ def run_experiment(nodes, deg, vranks, desc):
 				do_cmd('mv ' + prvroot + '-node.prv ' + tracedir + '/' + tracenodename + '.prv')
 				do_cmd('mv ' + prvroot + '-node.pcf ' + tracedir + '/' + tracenodename + '.pcf')
 				do_cmd('mv ' + prvroot + '-node.row ' + tracedir + '/' + tracenodename + '.row')
-				do_cmd('mv .hybrid/ ' + tracedir)
+				if params['hybrid_directory'] is None:
+					do_cmd('mv .hybrid/ ' + tracedir)
+				else:
+					do_cmd('cp ' + params['hybrid_directory'] + ' ' + tracedir + '/.hybrid')
 				if params['keep_set-0']:
 					do_cmd('mv set-0 ' + tracedir)
 			else:
