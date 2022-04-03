@@ -209,14 +209,17 @@ def run_experiment(nodes, deg, vranks, desc):
 	do_cmd('rm -f .kill')
 	if rebalance:
 
-
 		rebalance_filename = 'rebalance-out-%d-%d.txt' % (nodes,deg)
 		if not params['hybrid_directory'] is None:
+
 			hybrid_dir = params['hybrid_directory']
+			os.makedirs(hybrid_dir, exist_ok=True)
 			# do_cmd('rm -rf ' + hybrid_dir)
 			rebalance_opts += f'--hybrid-directory {hybrid_dir}'
+			rebalance_filename = f'{hybrid_dir}/{rebalance_filename}'
 		else:
 			do_cmd('rm -rf .hybrid')
+
 		do_cmd('${MERCURIUM}/../rebalance/rebalance.py ' + rebalance_opts + ' 10000 > ' + rebalance_filename + ' &')
 		time.sleep(1)
 
