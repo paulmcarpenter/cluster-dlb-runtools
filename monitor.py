@@ -148,7 +148,7 @@ fmt_no_value = {'alloc' : '%2s', 'enabled' : '%2s', 'busy' : '%4s', 'useful-busy
 			'lent' : '%4s', 'borrowed' : '%4s'}
 
 fmt_desc = {'alloc' : 'Allocated cores (target number to own)',
-			'enabled' : 'Active owned cores (owned-lent+borrowed)',
+			'enabled' : 'Enabled cores (owned-lent+borrowed)',
 			'busy' : 'Busy cores',
 			'useful-busy' : 'Useful busy cores (running tasks)',
 			'localtasks' : 'Local ready tasks',
