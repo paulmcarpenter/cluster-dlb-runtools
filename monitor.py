@@ -78,9 +78,11 @@ def yellow(s):
     return '\033[1;33m' + s + '\033[0;m'  if use_colours else s
 
 
-def read_map_entry(label, line):
+def read_map_entry(label, line, mapfilename):
 	s = line.split()
-	assert(s[0] == label)
+	if len(s) < 1 or s[0] != label:
+		print(f'Bad map file {mapfilename}')
+		sys.exit(1)
 	return int(s[1])
 
 class ReadLog:
@@ -353,11 +355,12 @@ def main(argv):
 
 	mapfiles = [f for f in os.listdir(hybrid_dir) if f.startswith('map')]
 	for mapfile in mapfiles:
-		with open(hybrid_dir + '/' + mapfile, 'r') as f:
-			extrank = read_map_entry('externalRank', f.readline())
-			apprankNum = read_map_entry('apprankNum', f.readline())
-			internalRank = read_map_entry('internalRank', f.readline())
-			nodeNum = read_map_entry('nodeNum', f.readline())
+		mapfilename = hybrid_dir + '/' + mapfile
+		with open(mapfilename, 'r') as f:
+			extrank = read_map_entry('externalRank', f.readline(), mapfilename)
+			apprankNum = read_map_entry('apprankNum', f.readline(), mapfilename)
+			internalRank = read_map_entry('internalRank', f.readline(), mapfilename)
+			nodeNum = read_map_entry('nodeNum', f.readline(), mapfilename)
 
 		if not nodeNum in extranksOnNode:
 			extranksOnNode[nodeNum] = []
