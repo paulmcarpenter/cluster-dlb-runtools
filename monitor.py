@@ -522,9 +522,13 @@ def main(argv):
 
 	print()
 	print('Legend:')
-	for k,col in enumerate(cols):
-		desc = '%2d. %s' % (k, fmt_desc[col])
-		print(colour_value(desc, col))
+	if barchart is None:
+		for k,col in enumerate(cols):
+			desc = '%2d. %s' % (k, fmt_desc[col])
+			print(colour_value(desc, col))
+	else:
+		print(f'  {barchart}')
+
 		
 
 	for extrank in extranks:
