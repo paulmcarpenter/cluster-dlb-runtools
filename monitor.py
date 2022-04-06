@@ -387,6 +387,7 @@ def main(argv):
 	extrankApprank = {}
 	gn = {}
 	maxApprank = 0
+	cpusOnNode = None
 
 	mapfiles = [f for f in os.listdir(hybrid_dir) if f.startswith('map')]
 	for mapfile in mapfiles:
@@ -396,6 +397,13 @@ def main(argv):
 			apprankNum = read_map_entry('apprankNum', f.readline(), mapfilename)
 			internalRank = read_map_entry('internalRank', f.readline(), mapfilename)
 			nodeNum = read_map_entry('nodeNum', f.readline(), mapfilename)
+			_ = read_map_entry('indexThisNode', f.readline(), mapfilename)
+			myCpusOnNode = read_map_entry('cpusOnNode', f.readline(), mapfilename)
+			if cpusOnNode is None:
+				cpusOnNode = myCpusOnNode
+			elif cpusOnNode != myCpusOnNode:
+				print('Inconsistent cpusOnNode')
+				return 1
 
 		if not nodeNum in extranksOnNode:
 			extranksOnNode[nodeNum] = []
