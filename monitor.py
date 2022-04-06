@@ -72,6 +72,11 @@ def magenta(s):
         return s
     return '\033[1;35m' + s + '\033[0;m'  if use_colours else s
 
+def yellow(s):
+    if not use_colours:
+        return s
+    return '\033[1;33m' + s + '\033[0;m'  if use_colours else s
+
 
 def read_map_entry(label, line):
 	s = line.split()
@@ -133,6 +138,7 @@ def Usage():
 			(min_numbered_field, min_numbered_field+1, max_numbered_field) )
 	print( ' --appranks l            List of appranks (use with order-by apprank)')
 	print( ' --nodes l               List of nodes (use with order-by node)')
+	print( ' --barchart busy         Draw a barchart of busy')
 	return 1
 
 fmt_spec = {'alloc' : '%2d', 'enabled' : '%2d', 'busy' : '%4.1f', 'useful-busy' : '%4.1f', 'localtasks' : '%4d', 'totaltasks' : '%4d',
@@ -201,6 +207,34 @@ def format_value(value, typ):
 	formatted = fmt_spec[typ] % field
 	return colour_value(formatted, typ)
 
+def make_barchart(values, extranks1, fieldname, width, extrankApprank):
+	def colorize(nodeNum, bar):
+		if nodeNum == 0:
+			return blue(bar)
+		elif nodeNum == 1:
+			return red(bar)
+		elif nodeNum == 2:
+			return yellow(bar)
+		elif nodeNum == 3:
+			return green(bar)
+		else:
+			return bar
+	s = ''
+	curWidth = 0
+	for extrank in extranks1:
+		if not extrank in values.keys():
+			return '?' * width
+		val = values[extrank][fieldname]
+		numchars = int((val * width) / 48)
+		nodeNum = extrankApprank[extrank]
+		# print('Nodenum', nodenum, 'value', numchars)
+		s = s + colorize(nodeNum, str(nodeNum) * numchars)
+		curWidth += numchars
+	if curWidth < width:
+		s = s + ' ' * (width - curWidth)
+	return s
+
+
 def no_value(typ):
 	return fmt_no_value[typ] % '#'
 
@@ -227,6 +261,7 @@ def main(argv):
 	show_appranks = None
 	show_nodes = None
 	hybrid_dir = find_hybrid_dir()
+	barchart = None
 
 	try:
 		numbered_opts = [str(f) for f in range(min_numbered_field, max_numbered_field+1) ]
@@ -239,6 +274,7 @@ def main(argv):
 										  'requests', 'requestacks',
 										  'owned', 'lent', 'borrowed',
 										  'follow',
+										  'barchart=',
 										  'subsample=', 'appranks=', 'nodes='] + numbered_opts)
 
 	except getopt.error as msg:
@@ -282,6 +318,9 @@ def main(argv):
 			show_appranks = read_appranks_or_nodes(a)
 		elif o == '--nodes':
 			show_nodes = read_appranks_or_nodes(a)
+		elif o == '--barchart':
+			barchart = a
+			order_by = 'node'
 		elif o == '--order-by':
 			order_by = a
 			if not order_by in ['node', 'apprank']:
@@ -363,30 +402,40 @@ def main(argv):
 	else:
 		assert false
 
-	width_per_extrank = sum([fmt_width[col]+1 for col in cols])+1
-	# Header line 1
-	if print_timestamp:
-		print('%5s ' % '', end='')
-	for k,extranks1 in enumerate(extranks_pr):
-		if order_by == 'node':
-			desc = 'Node %d' % k
-		else:
-			desc = 'Apprank %d' % k
-		total_width = width_per_extrank * len(extranks1)
-		print( desc.center(total_width) + ' | ', end = ' ')
-	print()
-	# Header line 2
-	if print_timestamp:
-		print('%5s ' % '', end='')
-	for k,extranks1 in enumerate(extranks_pr):
-		for extrank in extranks1:
+	if barchart is None:
+		width_per_extrank = sum([fmt_width[col]+1 for col in cols])+1
+		# Header line 1
+		if print_timestamp:
+			print('%5s ' % '', end='')
+		for k,extranks1 in enumerate(extranks_pr):
 			if order_by == 'node':
-				desc = 'a%d' % extrankApprank[extrank]
+				desc = 'Node %d' % k
 			else:
-				desc = 'n%d' % extrankNode[extrank]
-			print( desc.center(width_per_extrank), end = '')
-		print(' | ', end = ' ')
-	print()
+				desc = 'Apprank %d' % k
+			total_width = width_per_extrank * len(extranks1)
+			print( desc.center(total_width) + ' | ', end = ' ')
+		print()
+		# Header line 2
+		if print_timestamp:
+			print('%5s ' % '', end='')
+		for k,extranks1 in enumerate(extranks_pr):
+			for extrank in extranks1:
+				if order_by == 'node':
+					desc = 'a%d' % extrankApprank[extrank]
+				else:
+					desc = 'n%d' % extrankNode[extrank]
+				print( desc.center(width_per_extrank), end = '')
+			print(' | ', end = ' ')
+		print()
+	else:
+		screenwidth = os.get_terminal_size().columns
+		width_per_node = int((screenwidth-6) / numNodes) - 3
+		if print_timestamp:
+			print('%5s ' % '', end='')
+		for node in range(0, numNodes):
+			desc = 'Node %d' % node
+			print( desc.center(width_per_node) + ' | ', end='') 
+		print()
 
 	readlogs = dict( [(extrank, ReadLog(files[extrank])) for extrank in extranks])
 
@@ -452,16 +501,20 @@ def main(argv):
 				print('%5.1f ' % curr_timestamp, end='')
 
 			for extranks1 in extranks_pr:
-				for extrank in extranks1:
-					#print '%2d %4.1f ' % (local_alloc[extrank], busy[extrank]),
-					if extrank in values:
-						for col in cols:
-							print(format_value(values[extrank], col), end=' ')
-					else:
-						for col in cols:
-							print(no_value(col), end=' ')
-					print(' ', end='')
-				print(' |  ', end='')
+				if not barchart is None:
+					bar = make_barchart(values, extranks1, barchart, width_per_node, extrankApprank)
+					print(bar, ' |', end='')
+				else:
+					for extrank in extranks1:
+						#print '%2d %4.1f ' % (local_alloc[extrank], busy[extrank]),
+						if extrank in values:
+							for col in cols:
+								print(format_value(values[extrank], col), end=' ')
+						else:
+							for col in cols:
+								print(no_value(col), end=' ')
+						print(' ', end='')
+					print(' |  ', end='')
 			print()
 
 	print()
