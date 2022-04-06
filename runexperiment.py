@@ -206,7 +206,6 @@ def run_experiment(nodes, deg, vranks, desc):
 	print('Experiment', 'vranks:', vranks, 'nodes:', nodes, 'deg:', deg, 'desc:', desc, 'cmd:', cmd, policy, 'rebalance:', rebalance)
 
 	rebalance_filename = None
-	do_cmd('rm -f .kill')
 	if rebalance:
 
 		rebalance_filename = 'rebalance-out-%d-%d.txt' % (nodes,deg)
@@ -218,7 +217,9 @@ def run_experiment(nodes, deg, vranks, desc):
 			rebalance_opts += f'--hybrid-directory {hybrid_dir}'
 			rebalance_filename = f'{hybrid_dir}/{rebalance_filename}'
 		else:
+			hybrid_dir = '.hybrid/'
 			do_cmd('rm -rf .hybrid')
+		do_cmd(f'rm -f {hybrid_dir}/.kill')
 
 		do_cmd('${MERCURIUM}/../rebalance/rebalance.py ' + rebalance_opts + ' 10000 > ' + rebalance_filename + ' &')
 		time.sleep(1)
@@ -271,7 +272,7 @@ def run_experiment(nodes, deg, vranks, desc):
 		return retval
 
 	if rebalance:
-		do_cmd('touch .kill')
+		do_cmd(f'touch {hybrid_dir}/.kill')
 	if params['instrumentation'] == 'extrae':
 		# Hack to generate TRACE.mpits file
 		prefix = ''
