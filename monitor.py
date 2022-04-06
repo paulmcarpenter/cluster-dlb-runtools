@@ -247,11 +247,14 @@ def make_barchart(values, extranks1, fieldname, width, extrankApprank):
 		if not extrank in values.keys():
 			return '?' * width
 		val = values[extrank][fieldname]
-		numchars = int((val * width) / 48)
-		apprank = extrankApprank[extrank]
-		#print('apprank', apprank, 'value', numchars)
-		s = s + apprankDigit(apprank) * numchars
-		curWidth += numchars
+		numchars = int((val * width) / barchart_range)
+		if numchars < 0:
+			s = s + '---'
+		else:
+			apprank = extrankApprank[extrank]
+			#print('apprank', apprank, 'value', numchars)
+			s = s + apprankDigit(apprank) * numchars
+	curWidth = len(s)
 	if curWidth < width:
 		s = s + ' ' * (width - curWidth)
 	elif curWidth > width:
