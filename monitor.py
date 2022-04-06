@@ -528,7 +528,7 @@ def main(argv):
 		print()
 	else:
 		screenwidth = os.get_terminal_size().columns
-		width_per_node = int((screenwidth-6) / numNodes) - 3
+		width_per_node = int((screenwidth-7) / numNodes) - 3
 		if print_timestamp:
 			print('%5s ' % '', end='')
 		for node in range(0, numNodes):
