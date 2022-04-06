@@ -164,6 +164,12 @@ fmt_no_value = {'alloc' : '%2s', 'enabled' : '%2s', 'busy' : '%4s', 'useful-busy
 			'apprankbusy' : '%4s', 'immovable' : '%4s', 'requests' : '%4s', 'requestacks' : '%4s', 'owned' : '%4s',
 			'lent' : '%4s', 'borrowed' : '%4s'}
 
+barchart_range_default = {'alloc' : 'num_cores', 'enabled' : 'num_cores', 'busy' : 'num_cores', 'useful-busy' : 'num_cores', 'localtasks' : 'auto', 'totaltasks' : 'auto',
+			'apprankbusy' : 'auto', 'immovable' : 'auto', 'requests' : 'auto', 'requestacks' : 'auto', 'owned' : 'num_cores4s',
+			'lent' : 'num_cores4s', 'borrowed' : 'num_cores'}
+
+
+
 fmt_desc = {'alloc' : 'Allocated cores (target number to own)',
 			'enabled' : 'Enabled cores (owned-lent+borrowed)',
 			'busy' : 'Busy cores',
@@ -218,7 +224,48 @@ def format_value(value, typ):
 	formatted = fmt_spec[typ] % field
 	return colour_value(formatted, typ)
 
-def make_barchart(values, extranks1, fieldname, width, extrankApprank):
+def update_values_from_log(values, extrank, s):
+	values[extrank] = {}
+	values[extrank]['alloc'] = int(s[1])
+	values[extrank]['enabled'] = int(s[2])
+	values[extrank]['busy'] = float(s[3])
+	values[extrank]['useful-busy'] = float(s[4])
+	values[extrank]['localtasks'] = int(s[5])
+	values[extrank]['totaltasks'] = int(s[6])
+	values[extrank]['apprankbusy'] = int(s[7])
+	values[extrank]['immovable'] = int(s[8])
+	values[extrank]['requests'] = int(s[9])
+	values[extrank]['requestacks'] = int(s[10])
+	values[extrank]['owned'] = int(s[11])
+	values[extrank]['lent'] = int(s[12])
+	values[extrank]['borrowed'] = int(s[13])
+	# Collect all other fields in numbered field for debug
+	idx = 14
+	while len(s) >= idx+1:
+		values[extrank][str(idx)] = float(s[idx])
+		idx += 1
+
+
+def calc_barchart_range(files, extranks, barchart):
+	max_val = 0
+	readlogs = dict( [(extrank, ReadLog(files[extrank])) for extrank in extranks])
+	values = {}
+	done = False
+	while not done:
+		for extrank in extranks:
+			if readlogs[extrank].done:
+				done = True
+				break
+			s = readlogs[extrank].current()
+			readlogs[extrank].get_next()
+			update_values_from_log(values, extrank, s)
+			max_val = max( values[extrank].get(barchart, 0), max_val)
+	print(f'Maximum value: {max_val}')
+	return max_val
+
+
+
+def make_barchart(values, extranks1, fieldname, width, extrankApprank, barchart_range):
 	def colour_code(apprank):
 		d = {'0' : '\033[1;34m', # blue
 			 '1' : '\033[1;31m', # red
@@ -247,7 +294,10 @@ def make_barchart(values, extranks1, fieldname, width, extrankApprank):
 		if not extrank in values.keys():
 			return '?' * width
 		val = values[extrank][fieldname]
-		numchars = int((val * width) / barchart_range)
+		if barchart_range == 0:
+			numchars = 0
+		else:
+			numchars = int((val * width) / barchart_range)
 		if numchars < 0:
 			s = s + '---'
 		else:
@@ -485,6 +535,11 @@ def main(argv):
 			desc = 'Node %d' % node
 			print( desc.center(width_per_node+1) + ' |', end='') 
 		print()
+		if barchart_range_default.get(barchart, 'auto') == 'num_cores':
+			barchart_range = cpusOnNode
+		else:
+			barchart_range = calc_barchart_range(files, extranks, barchart)
+	
 
 	readlogs = dict( [(extrank, ReadLog(files[extrank])) for extrank in extranks])
 
@@ -520,25 +575,7 @@ def main(argv):
 			# Get current line from all
 			if not s is None:
 				num_valid += 1
-				values[extrank] = {}
-				values[extrank]['alloc'] = int(s[1])
-				values[extrank]['enabled'] = int(s[2])
-				values[extrank]['busy'] = float(s[3])
-				values[extrank]['useful-busy'] = float(s[4])
-				values[extrank]['localtasks'] = int(s[5])
-				values[extrank]['totaltasks'] = int(s[6])
-				values[extrank]['apprankbusy'] = int(s[7])
-				values[extrank]['immovable'] = int(s[8])
-				values[extrank]['requests'] = int(s[9])
-				values[extrank]['requestacks'] = int(s[10])
-				values[extrank]['owned'] = int(s[11])
-				values[extrank]['lent'] = int(s[12])
-				values[extrank]['borrowed'] = int(s[13])
-				# Collect all other fields in numbered field for debug
-				idx = 14
-				while len(s) >= idx+1:
-					values[extrank][str(idx)] = float(s[idx])
-					idx += 1
+				update_values_from_log(values, extrank, s)
 
 		curr_timestamp += 0.5
 
@@ -551,7 +588,7 @@ def main(argv):
 
 			for extranks1 in extranks_pr:
 				if not barchart is None:
-					bar = make_barchart(values, extranks1, barchart, width_per_node, extrankApprank)
+					bar = make_barchart(values, extranks1, barchart, width_per_node, extrankApprank, barchart_range)
 					print(bar, ' |', end='')
 				else:
 					for extrank in extranks1:
@@ -575,6 +612,7 @@ def main(argv):
 	else:
 		maxApprankNum = apprankDigit(maxApprank - 1)
 		print(f'  {barchart}: number is apprank number from 0 to {maxApprankNum}')
+		print(f'  Barchart range is 0 to {barchart_range}')
 
 		
 
