@@ -92,11 +92,14 @@ def read_map_entry(label, line, mapfilename):
 	return int(s[1])
 
 class ReadLog:
-	def __init__(self, fp):
-		self._fp = fp
+	def __init__(self, filename):
+		self._fp = open(filename, 'r')
 		self._splitline = None
 		self._timestamp = None
 		self.done = False
+
+	def __del__(self):
+		self._fp.close()
 	
 	def try_read_next(self):
 		line = self._fp.readline()
@@ -408,7 +411,7 @@ def main(argv):
 
 	files = {}
 	for extrank in extranks:
-		files[extrank] = open(hybrid_dir + '/utilization%d' % extrank, 'r')
+		files[extrank] = hybrid_dir + '/utilization%d' % extrank
 
 	if order_by == 'node':
 		if not show_appranks is None:
@@ -563,9 +566,6 @@ def main(argv):
 		print(f'  {barchart}: number is apprank number from 0 to {maxApprankNum}')
 
 		
-
-	for extrank in extranks:
-		files[extrank].close()
 
 			
 if __name__ == '__main__':
