@@ -216,17 +216,28 @@ def format_value(value, typ):
 	return colour_value(formatted, typ)
 
 def make_barchart(values, extranks1, fieldname, width, extrankApprank):
-	def colorize(nodeNum, bar):
-		if nodeNum == 0:
-			return blue(bar)
-		elif nodeNum == 1:
-			return red(bar)
-		elif nodeNum == 2:
-			return yellow(bar)
-		elif nodeNum == 3:
-			return green(bar)
-		else:
-			return bar
+	def colour_code(apprank):
+		d = {'0' : '\033[1;34m', # blue
+			 '1' : '\033[1;31m', # red
+			 '2' : '\033[1;33m', # yellow
+			 '3' : '\033[1;32m', # green
+			 '4' : '\033[1;35m', # magenta
+			 '5' : '\033[1;36m', # cyan
+			 '6' : '\033[38;5;105m',
+			 '7' : '\033[38;5;9m',
+			 '8' : '\033[0;34m', # weak blue
+			 '9' : '\033[0;31m', # weak red
+			 'a' : '\033[0;33m', # weak yellow
+			 'b' : '\033[0;32m', # weak green
+			 'c' : '\033[0;35m', # weak magenta
+			 'd' : '\033[0;36m', # weak cyan
+			 'e' : '\033[38;5;210m',
+			 'f' : '\033[38;5;249m'
+			 }
+
+		return d.get(apprank, '\033[0;m')
+	
+	# Build to correct width without colouring
 	s = ''
 	curWidth = 0
 	for extrank in extranks1:
@@ -236,11 +247,26 @@ def make_barchart(values, extranks1, fieldname, width, extrankApprank):
 		numchars = int((val * width) / 48)
 		apprank = extrankApprank[extrank]
 		#print('apprank', apprank, 'value', numchars)
-		s = s + colorize(apprank, apprankDigit(apprank) * numchars)
+		s = s + apprankDigit(apprank) * numchars
 		curWidth += numchars
 	if curWidth < width:
 		s = s + ' ' * (width - curWidth)
-	return s
+	elif curWidth > width:
+		s = s + '   '
+		s = s[:width-3] + '...'
+
+	cur_col = None
+	s2 = ''
+	if use_colours:
+		for ch in s:
+			if ch != cur_col:
+				cur_col = ch
+				s2 = s2 + colour_code(cur_col)
+			s2 = s2 + ch
+		if ch != None:
+			s2 = s2 + '\033[0;m'
+
+	return s2
 
 
 def no_value(typ):
