@@ -78,6 +78,12 @@ def yellow(s):
     return '\033[1;33m' + s + '\033[0;m'  if use_colours else s
 
 
+def apprankDigit(apprank):
+	if apprank < 10:
+		return chr(ord('0') + apprank)
+	else:
+		return chr(ord('a') + (apprank-10))
+
 def read_map_entry(label, line, mapfilename):
 	s = line.split()
 	if len(s) < 1 or s[0] != label:
@@ -228,9 +234,9 @@ def make_barchart(values, extranks1, fieldname, width, extrankApprank):
 			return '?' * width
 		val = values[extrank][fieldname]
 		numchars = int((val * width) / 48)
-		nodeNum = extrankApprank[extrank]
-		# print('Nodenum', nodenum, 'value', numchars)
-		s = s + colorize(nodeNum, str(nodeNum) * numchars)
+		apprank = extrankApprank[extrank]
+		#print('apprank', apprank, 'value', numchars)
+		s = s + colorize(apprank, apprankDigit(apprank) * numchars)
 		curWidth += numchars
 	if curWidth < width:
 		s = s + ' ' * (width - curWidth)
@@ -437,7 +443,7 @@ def main(argv):
 			print('%5s ' % '', end='')
 		for node in range(0, numNodes):
 			desc = 'Node %d' % node
-			print( desc.center(width_per_node) + ' | ', end='') 
+			print( desc.center(width_per_node+1) + ' |', end='') 
 		print()
 
 	readlogs = dict( [(extrank, ReadLog(files[extrank])) for extrank in extranks])
@@ -527,7 +533,8 @@ def main(argv):
 			desc = '%2d. %s' % (k, fmt_desc[col])
 			print(colour_value(desc, col))
 	else:
-		print(f'  {barchart}')
+		maxApprankNum = apprankDigit(maxApprank - 1)
+		print(f'  {barchart}: number is apprank number from 0 to {maxApprankNum}')
 
 		
 
