@@ -203,6 +203,7 @@ def run_experiment(nodes, deg, vranks, desc):
 		hybrid_policy = None
 		rebalance = False
 
+	# This is parsed by run-benchmarks.py
 	print('Experiment', 'vranks:', vranks, 'nodes:', nodes, 'deg:', deg, 'desc:', desc, 'cmd:', cmd, policy, 'rebalance:', rebalance)
 
 	rebalance_filename = None

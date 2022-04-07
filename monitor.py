@@ -258,8 +258,9 @@ def calc_barchart_range(files, extranks, barchart):
 				break
 			s = readlogs[extrank].current()
 			readlogs[extrank].get_next()
-			update_values_from_log(values, extrank, s)
-			max_val = max( values[extrank].get(barchart, 0), max_val)
+			if not s is None:
+				update_values_from_log(values, extrank, s)
+				max_val = max( values[extrank].get(barchart, 0), max_val)
 	print(f'Maximum value: {max_val}')
 	return max_val
 
