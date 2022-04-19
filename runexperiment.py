@@ -41,7 +41,8 @@ params = {'use_dlb' : True,
 		  'preload_prefix' : None,
 		  'discard_trace' : False,
 		  'hybrid_directory' : None,
-		  'dry_run' : False}
+		  'dry_run' : False,
+		  'oneslow' : False}
 
 nanos6_override_prefix = {}
 
@@ -182,7 +183,10 @@ def run_experiment(nodes, deg, vranks, desc):
 
 	# Clean DLB
 	if params['use_dlb']:
-		do_cmd('mpirun -np %d dlb_shm -d' % nodes)
+		if params['oneslow']:
+			do_cmd('srun -n %d : -n %d dlb_shm -d' % (nodes-1, 1))
+		else:
+			do_cmd('mpirun -np %d dlb_shm -d' % nodes)
 
 	
 	if policy == 'global':
@@ -266,7 +270,19 @@ def run_experiment(nodes, deg, vranks, desc):
 
 	s += ' NANOS6_CONFIG_OVERRIDE=\"%s\" ' % get_nanos6_override(nanos6_override)
 	
-	s += 'mpirun -np %d %s ' % (vranks*deg, cmd)
+	if params['oneslow']:
+		# Assume 12 cores for Nord3
+		vranks_per_node = vranks // nodes
+		tasks_per_node = deg * vranks_per_node
+		assert (12 % tasks_per_node == 0)
+		cores_per_task = 12 // tasks_per_node
+		ntasks_fast = (nodes-1) * tasks_per_node
+		ntasks_slow = 1 * tasks_per_node
+		s += f'srun --ntasks={ntasks_fast} --cpus-per-task={cores_per_task} --cpu-freq=High : '
+		s += f' --ntasks={ntasks_slow} --cpus-per-task={cores_per_task} --cpu-freq=1000-1000 '
+		s += cmd
+	else:
+		s += 'mpirun -np %d %s ' % (vranks*deg, cmd)
 	retval = do_cmd(s)
 
 	if retval != 0:

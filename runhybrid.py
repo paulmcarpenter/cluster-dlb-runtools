@@ -38,6 +38,7 @@ def Usage():
 	print(' --hybrid-directory      Hybrid directory, normally .hybrid')
 	print(' --dry-run               Do not actually run')
 	print(' --nodes n               Number of nodes: use with --dry-run')
+	print(' --oneslow               Assume last node is slow (Nord3)')
 	print('Options forwarded to rebalance.py:')
 	print('\n'.join([' --%s' % name for (name,has_arg,shortname) in runexperiment.rebalance_forwarded_opts]))
 	return 1
@@ -76,7 +77,7 @@ def main(argv):
 										  'local-period=', 'trace-suffix=', 'debug=',
 										  'enable-drom=', 'enable-lewi=', 'config-override=',
 										  'keep-set-0', 'keep', 'preload-prefix=', 'discard-trace', 'hybrid-directory=',
-										  'dry-run', 'nodes='] + rebalance_getopt)
+										  'dry-run', 'nodes=', 'oneslow'] + rebalance_getopt)
 
 	except getopt.error as msg:
 		print(msg)
@@ -147,6 +148,8 @@ def main(argv):
 			runexperiment.set_param('dry_run', True)
 		elif o == '--nodes':
 			nodes = int(a)
+		elif o == '--oneslow':
+			runexperiment.set_param('oneslow', True)
 		else:
 			try:
 				options = ['--' + name for (name, has_arg, shortname) in runexperiment.rebalance_forwarded_opts]
@@ -184,7 +187,8 @@ def main(argv):
 		if not check_num_nodes.get_on_compute_node():
 			print('runhybrid.py without --dry-run can only be run on a compute node')
 			return 2
-		nodes = check_num_nodes.get_num_nodes()
+		if nodes is None:
+			nodes = check_num_nodes.get_num_nodes()
 	if vranks is None:
 		vranks = nodes
 
