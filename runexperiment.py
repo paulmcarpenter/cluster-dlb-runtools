@@ -222,7 +222,7 @@ def run_experiment(nodes, deg, vranks, desc):
 			do_cmd('rm -rf .hybrid')
 		do_cmd(f'rm -f {hybrid_dir}/.kill')
 
-		do_cmd('${MERCURIUM}/../rebalance/rebalance.py ' + rebalance_opts + ' 10000 > ' + rebalance_filename + ' &')
+		do_cmd('${MERCURIUM}/../rebalance/rebalance.py ' + rebalance_opts + ' 100000 > ' + rebalance_filename + ' &')
 		time.sleep(1)
 
 	if params['instrumentation'] == 'extrae':
