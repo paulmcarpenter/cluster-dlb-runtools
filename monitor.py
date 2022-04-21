@@ -165,7 +165,7 @@ fmt_no_value = {'alloc' : '%2s', 'enabled' : '%2s', 'busy' : '%4s', 'useful-busy
 			'lent' : '%4s', 'borrowed' : '%4s'}
 
 barchart_range_default = {'alloc' : 'num_cores', 'enabled' : 'num_cores', 'busy' : 'num_cores', 'useful-busy' : 'num_cores', 'localtasks' : 'auto', 'totaltasks' : 'auto',
-			'apprankbusy' : 'auto', 'immovable' : 'auto', 'requests' : 'auto', 'requestacks' : 'auto', 'owned' : 'num_cores4s',
+			'apprankbusy' : 'auto', 'immovable' : 'auto', 'requests' : 'auto', 'requestacks' : 'auto', 'owned' : 'num_cores',
 			'lent' : 'num_cores4s', 'borrowed' : 'num_cores'}
 
 
@@ -535,11 +535,12 @@ def main(argv):
 		for node in range(0, numNodes):
 			desc = 'Node %d' % node
 			print( desc.center(width_per_node+1) + ' |', end='') 
-		print()
+		print('hello')
 		if barchart_range_default.get(barchart, 'auto') == 'num_cores':
 			barchart_range = cpusOnNode
 		else:
 			barchart_range = calc_barchart_range(files, extranks, barchart)
+		print('hello again')
 	
 
 	readlogs = dict( [(extrank, ReadLog(files[extrank])) for extrank in extranks])
